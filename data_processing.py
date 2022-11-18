@@ -75,6 +75,8 @@ def crop_augment(img_paths, GT_paths, dim, step, num_class):
     imgs = np.delete(imgs, delete_list, 0)
     GTs = np.delete(GTs, delete_list, 0)
     GTs = to_categorical(GTs, num_classes=num_class)
+    imgs = np.transpose(imgs, axes=(0, 3, 1, 2))
+    GTs = np.transpose(GTs, axes=(0, 3, 1, 2))
     imgs_90 = np.copy(imgs)
     imgs_vflip = np.copy(imgs)
     imgs_hflip = np.copy(imgs)
