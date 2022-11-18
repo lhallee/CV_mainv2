@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from torch import optim
 from tqdm import tqdm
-from metrics import *
+from metrics import _calculate_overlap_metrics
 from models import U_Net, R2U_Net, AttU_Net, R2AttU_Net
 from plots import checker, test_saver
 import csv
@@ -99,15 +99,14 @@ class Solver(object):
 		return img
 	'''
 	def train(self):
-		self.unet_path = os.path.join(self.model_path, '%s-%d-%.4f.pkl' % (self.model_type, self.num_epochs, self.lr))
+		self.unet_path = self.model_path + self.model_type + str(self.num_epochs) + str(self.lr)
 		for epoch in range(self.num_epochs):
 			epoch_loss = 0
 			acc = 0.  # Accuracy
-			SE = 0.  # Sensitivity (Recall)
+			RE = 0.  # Sensitivity (Recall)
 			SP = 0.  # Specificity
 			PC = 0.  # Precision
 			F1 = 0.  # F1 Score
-			JS = 0.  # Jaccard Similarity
 			DC = 0.  # Dice Coefficient
 			length = 0
 			pbar_train = tqdm(total=len(self.train_loader), desc='Training')
@@ -117,13 +116,13 @@ class Solver(object):
 				GT = GT.to(self.device)
 				# SR : Segmentation Result
 				SR = self.unet(images)
-				SR_probs = torch.sigmoid(SR)
+				#SR_probs = torch.sigmoid(SR)
 				#SR_flat = SR_probs.view(SR_probs.size(0), -1)
 				#GT_flat = GT.view(GT.size(0), -1)
 
-				loss = self.criterion(SR_probs, GT)
+				loss = self.criterion(SR, GT)
 				if batch % 50 == 0:
-					checker(path=self.result_path, imgs=SR_probs, GTs=GT, epoch=epoch, batch=batch, num_class=self.output_ch + 1)
+					checker(path=self.result_path, imgs=SR, GTs=GT, epoch=epoch, batch=batch, num_class=self.output_ch + 1)
 
 				epoch_loss += loss.item()
 
@@ -134,31 +133,30 @@ class Solver(object):
 				if self.scheduler is not None:
 					self.scheduler.step()
 
-				acc += get_accuracy(SR, GT)
-				SE += get_sensitivity(SR, GT)
-				SP += get_specificity(SR, GT)
-				PC += get_precision(SR, GT)
-				F1 += get_F1(SR, GT)
-				JS += get_JS(SR, GT)
-				DC += get_DC(SR, GT)
+				_acc, _DC, _PC, _RE, _SP, _F1 = _calculate_overlap_metrics(SR.detach().cpu(), GT)
+				acc += _acc.item()
+				DC += _DC.item()
+				RE += _RE.item()
+				SP += _SP.item()
+				PC += _PC.item()
+				F1 += _F1.item()
 				length += images.size(0)
 				batch += 1
 				pbar_train.update(1)
 
 			acc = acc / length
-			SE = SE / length
+			RE = RE / length
 			SP = SP / length
 			PC = PC / length
 			F1 = F1 / length
-			JS = JS / length
 			DC = DC / length
 
 			# Print the log info
 			print(
-				'Epoch [%d/%d], Loss: %.4f, \n[Training] Acc: %.4f, SE: %.4f, SP: %.4f, PC: %.4f, F1: %.4f, JS: %.4f, DC: %.4f' % (
+				'Epoch [%d/%d], Loss: %.4f, \n[Training] Acc: %.4f, RE: %.4f, SP: %.4f, PC: %.4f, F1: %.4f, DC: %.4f' % (
 					epoch + 1, self.num_epochs,
 					epoch_loss,
-					acc, SE, SP, PC, F1, JS, DC)
+					acc, RE, SP, PC, F1, DC)
 			)
 			pbar_train.close()
 			self.valid(epoch)
@@ -166,7 +164,7 @@ class Solver(object):
 	def valid(self, epoch):
 		best_unet_score = 0.0
 		acc = 0.  # Accuracy
-		SE = 0.  # Sensitivity (Recall)
+		RE = 0.  # Sensitivity (Recall)
 		SP = 0.  # Specificity
 		PC = 0.  # Precision
 		F1 = 0.  # F1 Score
@@ -176,28 +174,27 @@ class Solver(object):
 		for images, GT in self.valid_loader:
 			images = images.to(self.device)
 			GT = GT.to(self.device)
-			SR = torch.sigmoid(self.unet(images))
-			acc += get_accuracy(SR, GT)
-			SE += get_sensitivity(SR, GT)
-			SP += get_specificity(SR, GT)
-			PC += get_precision(SR, GT)
-			F1 += get_F1(SR, GT)
-			JS += get_JS(SR, GT)
-			DC += get_DC(SR, GT)
+			SR = self.unet(images)
+			_acc, _DC, _PC, _RE, _SP, _F1 = _calculate_overlap_metrics(SR.detach().cpu(), GT)
+			acc += _acc.item()
+			DC += _DC.item()
+			RE += _RE.item()
+			SP += _SP.item()
+			PC += _PC.item()
+			F1 += _F1.item()
 
 			length += images.size(0)
 
 		acc = acc / length
-		SE = SE / length
+		RE = RE / length
 		SP = SP / length
 		PC = PC / length
 		F1 = F1 / length
-		JS = JS / length
 		DC = DC / length
-		unet_score = JS + DC
+		unet_score = F1 + DC
 
-		print('[Validation] Acc: %.4f, SE: %.4f, SP: %.4f, PC: %.4f, F1: %.4f, JS: %.4f, DC: %.4f' % (
-		acc, SE, SP, PC, F1, JS, DC))
+		print('[Validation] Acc: %.4f, RE: %.4f, SP: %.4f, PC: %.4f, F1: %.4f, DC: %.4f' % (
+		acc, RE, SP, PC, F1, DC))
 
 
 		'''
@@ -230,7 +227,7 @@ class Solver(object):
 			self.unet.load_state_dict(torch.load(self.unet_path))
 
 		acc = 0.  # Accuracy
-		SE = 0.  # Sensitivity (Recall)
+		RE = 0.  # Sensitivity (Recall)
 		SP = 0.  # Specificity
 		PC = 0.  # Precision
 		F1 = 0.  # F1 Score
@@ -243,29 +240,28 @@ class Solver(object):
 			batch += 1
 			images = images.to(self.device)
 			GT = GT.to(self.device)
-			SR = torch.sigmoid(self.unet(images))
+			SR = self.unet(images)
 			test_saver(path=self.result_path, imgs=SR, GTs=GT, batch=batch)
-			acc += get_accuracy(SR, GT)
-			SE += get_sensitivity(SR, GT)
-			SP += get_specificity(SR, GT)
-			PC += get_precision(SR, GT)
-			F1 += get_F1(SR, GT)
-			JS += get_JS(SR, GT)
-			DC += get_DC(SR, GT)
+			_acc, _DC, _PC, _RE, _SP, _F1 = _calculate_overlap_metrics(SR.detach().cpu(), GT)
+			acc += _acc.item()
+			DC += _DC.item()
+			RE += _RE.item()
+			SP += _SP.item()
+			PC += _PC.item()
+			F1 += _F1.item()
 			length += images.size(0)
 			pbar_test.update(1)
 
 		acc = acc / length
-		SE = SE / length
+		RE = RE / length
 		SP = SP / length
 		PC = PC / length
 		F1 = F1 / length
-		JS = JS / length
 		DC = DC / length
-		unet_score = JS + DC
+		unet_score = F1 + DC
 
 		f = open(os.path.join(self.result_path, 'result.csv'), 'a', encoding='utf-8', newline='')
 		wr = csv.writer(f)
-		wr.writerow([self.model_type, acc, SE, SP, PC, F1, JS, DC, self.lr, self.best_epoch, self.num_epochs])
+		wr.writerow([self.model_type, acc, RE, SP, PC, F1, DC, self.lr, self.best_epoch, self.num_epochs])
 		f.close()
 		pbar_test.close()

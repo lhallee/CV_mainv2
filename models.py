@@ -380,6 +380,7 @@ class R2AttU_Net(nn.Module):
         self.Up_RRCNN2 = RRCNN_block(ch_in=128, ch_out=64, t=t)
 
         self.Conv_1x1 = nn.Conv2d(64, output_ch, kernel_size=1, stride=1, padding=0)
+        self.out = nn.Sigmoid()
 
     def forward(self, x):
         # encoding path
@@ -419,5 +420,7 @@ class R2AttU_Net(nn.Module):
         d2 = self.Up_RRCNN2(d2)
 
         d1 = self.Conv_1x1(d2)
+        out = self.out(d1)
 
-        return d1
+        return out
+
