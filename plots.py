@@ -56,10 +56,10 @@ def checker(path, imgs, GTs, batch, num_class=2):
         plt.axis('off')
         plt.title('GT')
         plt.show()
-    plt.imsave(path + str(epoch) + '_check_img.png', np.hstack(((imgs[0][:,:,1]), (GTs[0][:,:,1]))))
+    plt.imsave(path + str(batch) + '_check_img.png', np.hstack(((imgs[0][:,:,1]), (GTs[0][:,:,1]))))
 
 def test_saver(path, imgs, GTs, batch):
     imgs = np.transpose(np.array(imgs.detach().cpu().numpy()), axes=(0, 2, 3, 1))
     GTs = np.transpose(np.array(GTs.detach().cpu().numpy()), axes=(0, 2, 3, 1))
     for i in range(len(imgs)):
-        plt.imsave(path + str(epoch) + '_check_img.png', np.hstack(((imgs[0][:,:,1]), (GTs[0][:,:,1]))))
+        plt.imsave(path + str(batch) + '_check_img.png', np.hstack(((imgs[0][:,:,1]), (GTs[0][:,:,1]))))
