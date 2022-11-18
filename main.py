@@ -70,6 +70,7 @@ def run_from_main():
     parser.add_argument('--GT_path', type=str, default='./GT/')
     parser.add_argument('--cuda_idx', type=int, default=0)
     parser.add_argument('--train_per', type=float, default=0.7, help='Percentage of training data in dataloaders')
+    parser.add_argument('-f')
     config = parser.parse_args()
     main(config)
 
