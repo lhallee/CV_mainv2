@@ -111,6 +111,7 @@ class Solver(object):
 			DC = 0.  # Dice Coefficient
 			length = 0
 			pbar_train = tqdm(total=len(self.train_loader), desc='Training')
+			batch = 0
 			for images, GT in self.train_loader:
 				images = images.to(self.device)
 				GT = GT.to(self.device)
@@ -121,8 +122,8 @@ class Solver(object):
 				#GT_flat = GT.view(GT.size(0), -1)
 
 				loss = self.criterion(SR_probs, GT)
-				if epoch % 10 == 0:
-					checker(path=self.result_path, imgs=SR_probs, GTs=GT, epoch=epoch, num_class=self.output_ch)
+				if batch % 10 == 0:
+					checker(path=self.result_path, imgs=SR_probs, GTs=GT, batch=batch, num_class=self.output_ch)
 
 				epoch_loss += loss.item()
 
@@ -141,6 +142,7 @@ class Solver(object):
 				JS += get_JS(SR, GT)
 				DC += get_DC(SR, GT)
 				length += images.size(0)
+				batch += 1
 				pbar_train.update(1)
 
 			acc = acc / length
