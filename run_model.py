@@ -21,7 +21,6 @@ class Solver(object):
 		self.best_unet = None
 		self.unet_path = None
 		self.optimizer = None
-		self.scheduler = None
 		self.best_epoch = None
 		self.img_ch = config.img_ch
 		self.output_ch = config.output_ch
@@ -32,6 +31,7 @@ class Solver(object):
 		self.beta1 = config.beta1
 		self.beta2 = config.beta2
 
+		self.scheduler = config.scheduler
 		# Training settings
 		self.num_epochs = config.num_epochs
 		self.batch_size = config.batch_size
@@ -58,10 +58,10 @@ class Solver(object):
 			self.unet = R2AttU_Net(img_ch=self.img_ch, output_ch=self.output_ch, t=self.t)
 
 		self.optimizer = optim.Adam(list(self.unet.parameters()), self.lr, (self.beta1, self.beta2))
-		self.scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=0.99, last_epoch=-1)
+		if self.scheduler == 'exp':
+			self.scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=0.99, last_epoch=-1)
 		self.unet.to(self.device)
-
-	# self.print_network(self.unet, self.model_type)
+		#self.print_network(self.unet, self.model_type)
 
 	def print_network(self, model, name):
 		"""Print out the network information."""
@@ -126,7 +126,8 @@ class Solver(object):
 				self.optimizer.zero_grad()
 				loss.backward()
 				self.optimizer.step()
-				self.scheduler.step()
+				if self.scheduler is not None:
+					self.scheduler.step()
 
 				acc += get_accuracy(SR, GT)
 				SE += get_sensitivity(SR, GT)
