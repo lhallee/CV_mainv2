@@ -33,8 +33,8 @@ def preview_crops(imgs, GTs, num_class=2):
 def checker(imgs, GTs, num_class=2):
     rows = num_class
     columns = 1
-    imgs = np.transpose(np.array(imgs.detach().numpy()), axes=(0, 2, 3, 1))
-    GTs = np.transpose(np.array(GTs.detach().numpy()), axes=(0, 2, 3, 1))
+    imgs = np.transpose(np.array(imgs.detach().cpu().numpy()), axes=(0, 2, 3, 1))
+    GTs = np.transpose(np.array(GTs.detach().cpu().numpy()), axes=(0, 2, 3, 1))
     i = np.random.randint(0, len(imgs))
     fig = plt.figure(figsize=(10, 7))
     fig.add_subplot(rows, columns, 1)
