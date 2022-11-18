@@ -47,13 +47,6 @@ def main(config):
 
 def run_from_main():
     parser = argparse.ArgumentParser()
-    try:
-        get_ipython().__class__.__name__
-        # No error means we're running on ipython
-        parser.parse_args(args=[])  # Reset args
-    except NameError:
-        # NameError means that we're running on terminal
-        parser.parse_args()
     # model hyper-parameters
     parser.add_argument('--image_size', type=int, default=128)
     parser.add_argument('--t', type=int, default=3, help='t for Recurrent step of R2U_Net or R2AttU_Net')
@@ -77,7 +70,7 @@ def run_from_main():
     parser.add_argument('--GT_path', type=str, default='./GT/')
     parser.add_argument('--cuda_idx', type=int, default=0)
     parser.add_argument('--train_per', type=float, default=0.7, help='Percentage of training data in dataloaders')
-    config = parser.parse_args()
+    config = parser.parse_args(args=[])
     main(config)
 
 if __name__ == '__main__':
