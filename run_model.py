@@ -25,7 +25,7 @@ class Solver(object):
 		self.best_epoch = None
 		self.img_ch = config.img_ch
 		self.output_ch = config.output_ch
-		self.criterion = torch.nn.CrossEntropyLoss()
+		self.criterion = torch.nn.BCELoss()
 
 		# Hyper-parameters
 		self.lr = config.lr
@@ -105,7 +105,6 @@ class Solver(object):
 
 		self.unet_path = os.path.join(self.model_path, '%s-%d-%.4f.pkl' % (self.model_type, self.num_epochs, self.lr))
 		best_unet_score = 0.0
-		pbar = tqdm(total=self.num_epochs, desc='Training')
 		for epoch in range(self.num_epochs):
 
 			self.unet.train(True)
@@ -119,7 +118,7 @@ class Solver(object):
 			JS = 0.  # Jaccard Similarity
 			DC = 0.  # Dice Coefficient
 			length = 0
-
+			pbar_train = tqdm(total=len(self.train_loader), desc='Training')
 			for images, GT in self.train_loader:
 
 				images = images.to(self.device)
@@ -147,6 +146,7 @@ class Solver(object):
 				JS += get_JS(SR, GT)
 				DC += get_DC(SR, GT)
 				length += images.size(0)
+				pbar_train.close()
 
 			acc = acc / length
 			SE = SE / length
@@ -163,6 +163,7 @@ class Solver(object):
 					epoch_loss,
 					acc, SE, SP, PC, F1, JS, DC)
 			)
+			pbar_train.close()
 
 			# ===================================== Validation ====================================#
 			self.unet.train(False)
@@ -176,6 +177,7 @@ class Solver(object):
 			JS = 0.  # Jaccard Similarity
 			DC = 0.  # Dice Coefficient
 			length = 0
+			pbar_valid = tqdm(total=len(self.valid_loader), desc='Validation')
 			for images, GT in self.valid_loader:
 				images = images.to(self.device)
 				GT = GT.to(self.device)
@@ -189,6 +191,7 @@ class Solver(object):
 				DC += get_DC(SR, GT)
 
 				length += images.size(0)
+				pbar_valid.update(1)
 
 			acc = acc / length
 			SE = SE / length
@@ -201,6 +204,7 @@ class Solver(object):
 
 			print('[Validation] Acc: %.4f, SE: %.4f, SP: %.4f, PC: %.4f, F1: %.4f, JS: %.4f, DC: %.4f' % (
 			acc, SE, SP, PC, F1, JS, DC))
+			pbar_valid.close()
 
 
 			'''
@@ -222,8 +226,7 @@ class Solver(object):
 				self.best_unet = self.unet.state_dict()
 				print('Best %s model score : %.4f' % (self.model_type, best_unet_score))
 				torch.save(self.best_unet, self.unet_path)
-			pbar.update(1)
-		pbar.close()
+
 	def test(self):
 		# ===================================== Test ====================================#
 		if self.best_unet is not None:
@@ -248,6 +251,7 @@ class Solver(object):
 			images = images.to(self.device)
 			GT = GT.to(self.device)
 			SR = torch.sigmoid(self.unet(images))
+			print(SR.shape)
 			acc += get_accuracy(SR, GT)
 			SE += get_sensitivity(SR, GT)
 			SP += get_specificity(SR, GT)
