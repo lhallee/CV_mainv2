@@ -7,7 +7,7 @@ from PIL import Image
 from glob import glob
 from sklearn.model_selection import train_test_split
 
-working_dir = 'C:/Users/lhall/Desktop/Research/Gleghorn/CV_mainv2'
+working_dir = 'C:/Users/Logan Hallee/Desktop/Segmentation/CV_mainv2'
 img_path = working_dir + '/img/'
 GT_path = working_dir + '/GT/'
 
@@ -50,14 +50,15 @@ class ImageSet(data.Dataset):
         return img, GT
 
 def crop_augment(img_paths, GT_paths, dim, step, num_class):
-    img = np.array(Image.open(img_paths))
+    img = np.array(Image.open(img_paths)) / 255.0
     GT = np.array(Image.open(GT_paths))
     a, b = GT.shape
     GT = GT.reshape(a, b, 1)
     imgs = view_as_windows(img, (dim, dim, 3), step=step)
     GTs = view_as_windows(GT, (dim, dim, 1), step=step)
-    imgs = imgs.reshape(len(imgs)**2, dim, dim, 3)
-    GTs = GTs.reshape(len(GTs)**2, dim, dim, 1)
+    a, b, c, d, e, f = imgs.shape
+    imgs = imgs.reshape(a * b, dim, dim, 3)
+    GTs = GTs.reshape(a * b, dim, dim, 1)
     if num_class == 2:
         GTs[GTs < 1] = 0
         GTs[GTs > 0] = 1
@@ -108,11 +109,4 @@ def file_to_dataloader(img_path, GT_path,
     val_loader = data.DataLoader(valid_data, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=num_cpu)
     test_loader = data.DataLoader(test_data, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=num_cpu)
     return train_loader, val_loader, test_loader
-
-a, b, c = file_to_dataloader(img_path, GT_path)
-print(len(a), len(b), len(c))
-
-plot_imgs, plot_GT = a.dataset[:3]
-from plots import preview_crops
-preview_crops(plot_imgs, plot_GT)
 
