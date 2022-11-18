@@ -7,7 +7,7 @@ from torch.backends import cudnn
 
 
 def main(config):
-    config.output_ch = config.num_class
+    config.output_ch = config.num_class - 1
     cudnn.benchmark = True
     if config.model_type not in ['U_Net', 'R2U_Net', 'AttU_Net', 'R2AttU_Net']:
         print('ERROR!! model_type should be selected in U_Net/R2U_Net/AttU_Net/R2AttU_Net')
@@ -59,7 +59,7 @@ def run_from_main():
     parser.add_argument('--lr', type=float, default=0.003)
     parser.add_argument('--beta1', type=float, default=0.5)  # momentum1 in Adam
     parser.add_argument('--beta2', type=float, default=0.999)  # momentum2 in Adam
-    parser.add_argument('--scheduler', type=str, default=None, help='None, or exp anneal \'exp\'')
+    parser.add_argument('--scheduler', type=str, default='exp', help='None, or exp anneal \'exp\'')
 
     # misc
     parser.add_argument('--mode', type=str, default='train')
