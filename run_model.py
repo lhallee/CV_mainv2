@@ -136,8 +136,8 @@ class Solver(object):
 				JS += get_JS(SR, GT)
 				DC += get_DC(SR, GT)
 				length += images.size(0)
-				pbar_train.close()
-				self.valid(epoch)
+				pbar_train.update(1)
+
 			acc = acc / length
 			SE = SE / length
 			SP = SP / length
@@ -154,6 +154,7 @@ class Solver(object):
 					acc, SE, SP, PC, F1, JS, DC)
 			)
 			pbar_train.close()
+			self.valid(epoch)
 	@torch.no_grad()
 	def valid(self, epoch):
 		best_unet_score = 0.0
