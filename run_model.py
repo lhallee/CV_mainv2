@@ -122,7 +122,7 @@ class Solver(object):
 
 				loss = self.criterion(SR_probs, GT)
 				if epoch % 10 == 0:
-					checker(SR_probs, GT, num_class=self.output_ch, epoch)
+					checker(imgs=SR_probs, GTs=GT, num_class=self.output_ch, epoch=epoch)
 
 				epoch_loss += loss.item()
 
