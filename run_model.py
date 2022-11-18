@@ -5,6 +5,7 @@ from torch import optim
 from tqdm import tqdm
 from metrics import *
 from models import U_Net, R2U_Net, AttU_Net, R2AttU_Net
+from plots import checker
 import csv
 
 
@@ -116,10 +117,12 @@ class Solver(object):
 				# SR : Segmentation Result
 				SR = self.unet(images)
 				SR_probs = torch.sigmoid(SR)
-				SR_flat = SR_probs.view(SR_probs.size(0), -1)
+				#SR_flat = SR_probs.view(SR_probs.size(0), -1)
+				#GT_flat = GT.view(GT.size(0), -1)
 
-				GT_flat = GT.view(GT.size(0), -1)
-				loss = self.criterion(SR_flat, GT_flat)
+				loss = self.criterion(SR_probs, GT)
+				checker(SR_probs, GT, num_class=self.output_ch)
+
 				epoch_loss += loss.item()
 
 				# Backprop + optimize
@@ -214,6 +217,7 @@ class Solver(object):
 			print('Best %s model score : %.4f' % (self.model_type, best_unet_score))
 			torch.save(self.best_unet, self.unet_path)
 
+	@torch.no_grad()
 	def test(self):
 		# ===================================== Test ====================================#
 		if self.best_unet is not None:
@@ -221,9 +225,6 @@ class Solver(object):
 		else:
 			self.build_model()
 			self.unet.load_state_dict(torch.load(self.unet_path))
-
-		self.unet.train(False)
-		self.unet.eval()
 
 		acc = 0.  # Accuracy
 		SE = 0.  # Sensitivity (Recall)
@@ -238,7 +239,6 @@ class Solver(object):
 			images = images.to(self.device)
 			GT = GT.to(self.device)
 			SR = torch.sigmoid(self.unet(images))
-			print(SR.shape)
 			acc += get_accuracy(SR, GT)
 			SE += get_sensitivity(SR, GT)
 			SP += get_specificity(SR, GT)

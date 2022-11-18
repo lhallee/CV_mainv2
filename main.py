@@ -48,20 +48,18 @@ def main(config):
 def run_from_main():
     parser = argparse.ArgumentParser()
     # model hyper-parameters
-    parser.add_argument('--image_size', type=int, default=256)
+    parser.add_argument('--image_size', type=int, default=128)
     parser.add_argument('--t', type=int, default=3, help='t for Recurrent step of R2U_Net or R2AttU_Net')
     parser.add_argument('--num_class', type=int, default=2, help='Number of classes for segmentation')
 
     # training hyper-parameters
     parser.add_argument('--img_ch', type=int, default=3)
     parser.add_argument('--num_epochs', type=int, default=10)
-    parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--lr', type=float, default=0.003)
     parser.add_argument('--beta1', type=float, default=0.5)  # momentum1 in Adam
     parser.add_argument('--beta2', type=float, default=0.999)  # momentum2 in Adam
-
-    parser.add_argument('--log_step', type=int, default=2)
-    parser.add_argument('--val_step', type=int, default=2)
+    parser.add_argument('--scheduler', type=str, default=None, help='None, or exp anneal \'exp\'')
 
     # misc
     parser.add_argument('--mode', type=str, default='train')
@@ -85,7 +83,7 @@ if __name__ == '__main__':
     # training hyper-parameters
     parser.add_argument('--img_ch', type=int, default=3)
     parser.add_argument('--num_epochs', type=int, default=10)
-    parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--lr', type=float, default=0.003)
     parser.add_argument('--beta1', type=float, default=0.5)  # momentum1 in Adam
     parser.add_argument('--beta2', type=float, default=0.999)  # momentum2 in Adam
