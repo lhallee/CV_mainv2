@@ -75,8 +75,6 @@ def crop_augment(img_paths, GT_paths, dim, step, num_class):
     imgs = np.delete(imgs, delete_list, 0)
     GTs = np.delete(GTs, delete_list, 0)
     GTs = to_categorical(GTs, num_classes=num_class)
-    imgs = np.transpose(imgs, axes=(0, 3, 1, 2))
-    GTs = np.transpose(GTs, axes=(0, 3, 1, 2))
     imgs_90 = np.copy(imgs)
     imgs_vflip = np.copy(imgs)
     imgs_hflip = np.copy(imgs)
@@ -102,6 +100,8 @@ def file_to_dataloader(img_path, GT_path,
     assert len(imgs) == len(GTs), 'Need GT for every Image.'
     crop_imgs = np.concatenate([crop_augment(imgs[i], GTs[i], dim, int(dim/2), num_class)[0] for i in tqdm(range(len(imgs)))])
     crop_GTs = np.concatenate([crop_augment(imgs[i], GTs[i], dim, int(dim/2), num_class)[1] for i in tqdm(range(len(imgs)))])
+    crop_imgs = np.transpose(crop_imgs, axes=(0, 3, 1, 2))
+    crop_GTs = np.transpose(crop_GTs, axes=(0, 3, 1, 2))
     X_train, X_mem, y_train, y_mem = train_test_split(crop_imgs, crop_GTs, train_size=train_per)
     X_valid, X_test, y_valid, y_test = train_test_split(X_mem, y_mem, test_size=0.33)
     train_data = ImageSet(X_train, y_train)

@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 def preview_crops(imgs, GTs, num_class=2):
     rows = num_class
     columns = 1
+    imgs = np.transpose(imgs, axes=(0, 2, 3, 1))
+    GTs = np.transpose(GTs, axes=(0, 2, 3, 1))
     for i in range(len(imgs)):
         fig = plt.figure(figsize=(10, 7))
         fig.add_subplot(rows, columns, 1)
