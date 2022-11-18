@@ -3,7 +3,6 @@ import numpy as np
 import torch
 from torch import optim
 from tqdm import tqdm
-import torch.nn.functional as F
 from metrics import *
 from models import U_Net, R2U_Net, AttU_Net, R2AttU_Net
 import csv
@@ -125,10 +124,9 @@ class Solver(object):
 
 				images = images.to(self.device)
 				GT = GT.to(self.device)
-				print(images.shape)
 				# SR : Segmentation Result
 				SR = self.unet(images)
-				SR_probs = F.sigmoid(SR)
+				SR_probs = torch.sigmoid(SR)
 				SR_flat = SR_probs.view(SR_probs.size(0), -1)
 
 				GT_flat = GT.view(GT.size(0), -1)
@@ -181,7 +179,7 @@ class Solver(object):
 			for images, GT in self.valid_loader:
 				images = images.to(self.device)
 				GT = GT.to(self.device)
-				SR = F.sigmoid(self.unet(images))
+				SR = torch.sigmoid(self.unet(images))
 				acc += get_accuracy(SR, GT)
 				SE += get_sensitivity(SR, GT)
 				SP += get_specificity(SR, GT)
@@ -249,7 +247,7 @@ class Solver(object):
 		for images, GT in self.test_loader:
 			images = images.to(self.device)
 			GT = GT.to(self.device)
-			SR = F.sigmoid(self.unet(images))
+			SR = torch.sigmoid(self.unet(images))
 			acc += get_accuracy(SR, GT)
 			SE += get_sensitivity(SR, GT)
 			SP += get_specificity(SR, GT)

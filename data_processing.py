@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import torch
 from torch.utils import data
 from skimage.util import view_as_windows
 from tqdm import tqdm
@@ -100,8 +101,8 @@ def file_to_dataloader(img_path, GT_path,
     assert len(imgs) == len(GTs), 'Need GT for every Image.'
     crop_imgs = np.concatenate([crop_augment(imgs[i], GTs[i], dim, int(dim/2), num_class)[0] for i in tqdm(range(len(imgs)))])
     crop_GTs = np.concatenate([crop_augment(imgs[i], GTs[i], dim, int(dim/2), num_class)[1] for i in tqdm(range(len(imgs)))])
-    crop_imgs = np.transpose(crop_imgs, axes=(0, 3, 1, 2))
-    crop_GTs = np.transpose(crop_GTs, axes=(0, 3, 1, 2))
+    crop_imgs = torch.tensor(np.transpose(crop_imgs, axes=(0, 3, 1, 2)), dtype=torch.float)
+    crop_GTs = torch.tensor(np.transpose(crop_GTs, axes=(0, 3, 1, 2)), dtype=torch.float)
     X_train, X_mem, y_train, y_mem = train_test_split(crop_imgs, crop_GTs, train_size=train_per)
     X_valid, X_test, y_valid, y_test = train_test_split(X_mem, y_mem, test_size=0.33)
     train_data = ImageSet(X_train, y_train)
