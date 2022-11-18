@@ -121,7 +121,8 @@ class Solver(object):
 				#GT_flat = GT.view(GT.size(0), -1)
 
 				loss = self.criterion(SR_probs, GT)
-				checker(SR_probs, GT, num_class=self.output_ch)
+				if epoch % 10 == 0:
+					checker(SR_probs, GT, num_class=self.output_ch, epoch)
 
 				epoch_loss += loss.item()
 
