@@ -133,7 +133,7 @@ class Solver(object):
 				if self.scheduler is not None:
 					self.scheduler.step()
 
-				_acc, _DC, _PC, _RE, _SP, _F1 = _calculate_overlap_metrics(SR.detach().cpu(), GT)
+				_acc, _DC, _PC, _RE, _SP, _F1 = _calculate_overlap_metrics(SR.detach().cpu(), GT.detach().cpu())
 				acc += _acc.item()
 				DC += _DC.item()
 				RE += _RE.item()
@@ -175,7 +175,7 @@ class Solver(object):
 			images = images.to(self.device)
 			GT = GT.to(self.device)
 			SR = self.unet(images)
-			_acc, _DC, _PC, _RE, _SP, _F1 = _calculate_overlap_metrics(SR.detach().cpu(), GT)
+			_acc, _DC, _PC, _RE, _SP, _F1 = _calculate_overlap_metrics(SR.detach().cpu(), GT.detach().cpu())
 			acc += _acc.item()
 			DC += _DC.item()
 			RE += _RE.item()
@@ -242,7 +242,7 @@ class Solver(object):
 			GT = GT.to(self.device)
 			SR = self.unet(images)
 			test_saver(path=self.result_path, imgs=SR, GTs=GT, batch=batch)
-			_acc, _DC, _PC, _RE, _SP, _F1 = _calculate_overlap_metrics(SR.detach().cpu(), GT)
+			_acc, _DC, _PC, _RE, _SP, _F1 = _calculate_overlap_metrics(SR.detach().cpu(), GT.detach().cpu())
 			acc += _acc.item()
 			DC += _DC.item()
 			RE += _RE.item()
