@@ -1,59 +1,63 @@
 import numpy as np
-import scipy
 import os
-import matplotlib.pyplot as plt
-import torch
 from torch.utils import data
-from torchvision import transforms as T
-from torchvision.transforms import functional as F
 from skimage.util import view_as_windows
-from keras.utils import to_categorical
 from tqdm import tqdm
 from PIL import Image
 from glob import glob
 from sklearn.model_selection import train_test_split
 
-working_dir = 'C:/Users/Logan/Desktop/Research/Gleghorn/CV_mainv2'
+working_dir = 'C:/Users/lhall/Desktop/Research/Gleghorn/CV_mainv2'
 img_path = working_dir + '/img/'
 GT_path = working_dir + '/GT/'
 
-dim = 256
+def to_categorical(y, num_classes=None, dtype="float32"):
+    """Converts a class vector (integers) to binary class matrix.
+    E.g. for use with `categorical_crossentropy`.
+    Args:
+        y: Array-like with class values to be converted into a matrix
+            (integers from 0 to `num_classes - 1`).
+        num_classes: Total number of classes. If `None`, this would be inferred
+          as `max(y) + 1`.
+        dtype: The data type expected by the input. Default: `'float32'`.
+    Returns:
+        A binary matrix representation of the input. The class axis is placed
+        last.
+    """
+    y = np.array(y, dtype="int")
+    input_shape = y.shape
+    if input_shape and input_shape[-1] == 1 and len(input_shape) > 1:
+        input_shape = tuple(input_shape[:-1])
+    y = y.ravel()
+    if not num_classes:
+        num_classes = np.max(y) + 1
+    n = y.shape[0]
+    categorical = np.zeros((n, num_classes), dtype=dtype)
+    categorical[np.arange(n), y] = 1
+    output_shape = input_shape + (num_classes,)
+    categorical = np.reshape(categorical, output_shape)
+    return categorical
 
-def ax_decorate_box(ax):
-    [j.set_linewidth(0) for j in ax.spines.values()]
-    ax.tick_params(axis="both", which="both", bottom=False, top=False,
-               labelbottom=False, left=False, right=False, labelleft=False)
-    return ax
-
-def target_data_process(GTs, num_class):
-    return to_categorical(GTs, num_classes=num_class)
-
-'''
-class ImageFolder(data.Dataset):
-    def __init__(self, root, crop_size=224):
-        """Initializes image paths and preprocessing module."""
-        self.root = root
-
-        # GT : Ground Truth
-        self.GT_paths = root[:-1] + 'GT/'
-        self.image_paths = sorted(glob(img_path + '*.png'))
-        self.crop_size = crop_size
-        self.RotationDegree = [90, 180, 270]
-        print("image count in path :{}".format(len(self.image_paths)))
-
+class ImageSet(data.Dataset):
+    def __init__(self, imgs, GTs):
+        self.imgs = imgs
+        self.GTs = GTs
+    def __len__(self):
+        return len(self.imgs)
     def __getitem__(self, index):
-        image_path = self.image_paths[index]
-        filename = image_path.split('_')
-'''
+        img = self.imgs[index]
+        GT = self.GTs[index]
+        return img, GT
 
-def crop_augment(img, GT, dim, step, num_class):
-#Crops and augments an image and GT the same way
-#img, GT - np.array, dim - int, step - int, num_class - int
+def crop_augment(img_paths, GT_paths, dim, step, num_class):
+    img = np.array(Image.open(img_paths))
+    GT = np.array(Image.open(GT_paths))
+    a, b = GT.shape
+    GT = GT.reshape(a, b, 1)
     imgs = view_as_windows(img, (dim, dim, 3), step=step)
     GTs = view_as_windows(GT, (dim, dim, 1), step=step)
     imgs = imgs.reshape(len(imgs)**2, dim, dim, 3)
     GTs = GTs.reshape(len(GTs)**2, dim, dim, 1)
-    print(imgs.shape, GTs.shape)
     if num_class == 2:
         GTs[GTs < 1] = 0
         GTs[GTs > 0] = 1
@@ -67,11 +71,9 @@ def crop_augment(img, GT, dim, step, num_class):
             delete_list.append(i)
         else:
             continue
-    print(len(delete_list))
     imgs = np.delete(imgs, delete_list, 0)
     GTs = np.delete(GTs, delete_list, 0)
     GTs = to_categorical(GTs, num_classes=num_class)
-    print(imgs.shape, GTs.shape)
     imgs_90 = np.copy(imgs)
     imgs_vflip = np.copy(imgs)
     imgs_hflip = np.copy(imgs)
@@ -89,30 +91,28 @@ def crop_augment(img, GT, dim, step, num_class):
     final_crops_GT = np.concatenate((GTs, GTs_90, GTs_vflip, GTs_hflip), axis=0)
     return final_crops, final_crops_GT
 
+def file_to_dataloader(img_path, GT_path,
+                       dim=256, num_class=2, train_per=0.7,
+                       batch_size=8, num_cpu=os.cpu_count()):
+    imgs = sorted(glob(img_path + '*.png'))
+    GTs = sorted(glob(GT_path + '*.png'))
+    assert len(imgs) == len(GTs), 'Need GT for every Image.'
+    crop_imgs = np.concatenate([crop_augment(imgs[i], GTs[i], dim, int(dim/2), num_class)[0] for i in tqdm(range(len(imgs)))])
+    crop_GTs = np.concatenate([crop_augment(imgs[i], GTs[i], dim, int(dim/2), num_class)[1] for i in tqdm(range(len(imgs)))])
+    X_train, X_mem, y_train, y_mem = train_test_split(crop_imgs, crop_GTs, train_size=train_per)
+    X_valid, X_test, y_valid, y_test = train_test_split(X_mem, y_mem, test_size=0.33)
+    train_data = ImageSet(X_train, y_train)
+    valid_data = ImageSet(X_valid, y_valid)
+    test_data = ImageSet(X_test, y_test)
+    train_loader = data.DataLoader(train_data, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=num_cpu)
+    val_loader = data.DataLoader(valid_data, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=num_cpu)
+    test_loader = data.DataLoader(test_data, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=num_cpu)
+    return train_loader, val_loader, test_loader
 
-img = Image.open('C:/Users/Logan/Desktop/Research/Gleghorn/CV_mainv2/img/2.png')
-img = np.array(img)
-GT = Image.open('C:/Users/Logan/Desktop/Research/Gleghorn/CV_mainv2/GT/2.png')
-GT = np.array(GT)
-a, b = GT.shape
-GT = GT.reshape(a, b, 1)
-crop_imgs, crop_GTs = crop_augment(img, GT, dim, int(dim/2), 2)
-print(crop_imgs.shape, crop_GTs.shape)
+a, b, c = file_to_dataloader(img_path, GT_path)
+print(len(a), len(b), len(c))
 
-
-
-
-rows = 1
-columns = 2
-for i in range(10):
-    fig = plt.figure(figsize=(10, 7))
-    fig.add_subplot(rows, columns, 1)
-    plt.imshow(crop_imgs[i])
-    plt.axis('off')
-    plt.title('Img')
-    fig.add_subplot(rows, columns, 2)
-    plt.imshow(crop_GTs[i][:,:,1], cmap='gray', vmin=0, vmax=1)
-    plt.axis('off')
-    plt.title('GT')
-    plt.show()
+plot_imgs, plot_GT = a.dataset[:3]
+from plots import preview_crops
+preview_crops(plot_imgs, plot_GT)
 
