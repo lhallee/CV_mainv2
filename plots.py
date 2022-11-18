@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def preview_crops(imgs, GTs, num_class=2):
-    rows = num_class
-    columns = 1
+    rows = 1
+    columns = num_class
     imgs = np.transpose(np.array(imgs), axes=(0, 2, 3, 1))
     GTs = np.transpose(np.array(GTs), axes=(0, 2, 3, 1))
     for i in range(len(imgs)):
@@ -30,8 +30,8 @@ def preview_crops(imgs, GTs, num_class=2):
             plt.show()
 
 def checker(path, imgs, GTs, batch, num_class=2):
-    rows = num_class
-    columns = 1
+    rows = 1
+    columns = num_class
     imgs = np.transpose(np.array(imgs.detach().cpu().numpy()), axes=(0, 2, 3, 1))
     GTs = np.transpose(np.array(GTs.detach().cpu().numpy()), axes=(0, 2, 3, 1))
     i = np.random.randint(0, len(imgs))
