@@ -99,7 +99,6 @@ class Solver(object):
 	'''
 	def train(self):
 		self.unet_path = os.path.join(self.model_path, '%s-%d-%.4f.pkl' % (self.model_type, self.num_epochs, self.lr))
-		best_unet_score = 0.0
 		for epoch in range(self.num_epochs):
 			epoch_loss = 0
 			acc = 0.  # Accuracy
@@ -138,7 +137,7 @@ class Solver(object):
 				DC += get_DC(SR, GT)
 				length += images.size(0)
 				pbar_train.close()
-				self.valid()
+				self.valid(epoch)
 			acc = acc / length
 			SE = SE / length
 			SP = SP / length
@@ -156,7 +155,8 @@ class Solver(object):
 			)
 			pbar_train.close()
 	@torch.no_grad()
-	def valid(self):
+	def valid(self, epoch):
+		best_unet_score = 0.0
 		acc = 0.  # Accuracy
 		SE = 0.  # Sensitivity (Recall)
 		SP = 0.  # Specificity
@@ -165,7 +165,6 @@ class Solver(object):
 		JS = 0.  # Jaccard Similarity
 		DC = 0.  # Dice Coefficient
 		length = 0
-		pbar_valid = tqdm(total=len(self.valid_loader), desc='Validation')
 		for images, GT in self.valid_loader:
 			images = images.to(self.device)
 			GT = GT.to(self.device)
@@ -179,7 +178,6 @@ class Solver(object):
 			DC += get_DC(SR, GT)
 
 			length += images.size(0)
-			pbar_valid.update(1)
 
 		acc = acc / length
 		SE = SE / length
@@ -192,7 +190,6 @@ class Solver(object):
 
 		print('[Validation] Acc: %.4f, SE: %.4f, SP: %.4f, PC: %.4f, F1: %.4f, JS: %.4f, DC: %.4f' % (
 		acc, SE, SP, PC, F1, JS, DC))
-		pbar_valid.close()
 
 
 		'''
