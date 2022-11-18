@@ -30,7 +30,7 @@ def preview_crops(imgs, GTs, num_class=2):
             plt.title('GT')
             plt.show()
 
-def checker(imgs, GTs, num_class=2, epoch):
+def checker(path, imgs, GTs, epoch, num_class=2):
     rows = num_class
     columns = 1
     imgs = np.transpose(np.array(imgs.detach().cpu().numpy()), axes=(0, 2, 3, 1))
@@ -58,4 +58,11 @@ def checker(imgs, GTs, num_class=2, epoch):
         plt.title('GT')
         plt.show()
     im = Image.fromarray(np.hstack(((imgs[0][:,:,1]), (GTs[0][:,:,1]))))
-    im.save(str(epoch) + '_check_img.png')
+    im.save(path + str(epoch) + '_check_img.png')
+
+def test_saver(path, imgs, GTs, batch):
+    imgs = np.transpose(np.array(imgs.detach().cpu().numpy()), axes=(0, 2, 3, 1))
+    GTs = np.transpose(np.array(GTs.detach().cpu().numpy()), axes=(0, 2, 3, 1))
+    for i in range(len(imgs)):
+        im = Image.fromarray(np.hstack(((imgs[0][:, :, 1]), (GTs[0][:, :, 1]))))
+        im.save(path + str(batch) + '_' + str(i) + '_test_img.png')

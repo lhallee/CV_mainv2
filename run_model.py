@@ -5,7 +5,7 @@ from torch import optim
 from tqdm import tqdm
 from metrics import *
 from models import U_Net, R2U_Net, AttU_Net, R2AttU_Net
-from plots import checker
+from plots import checker, test_saver
 import csv
 
 
@@ -122,7 +122,7 @@ class Solver(object):
 
 				loss = self.criterion(SR_probs, GT)
 				if epoch % 10 == 0:
-					checker(imgs=SR_probs, GTs=GT, num_class=self.output_ch, epoch=epoch)
+					checker(path=self.result_path, imgs=SR_probs, GTs=GT, epoch=epoch, num_class=self.output_ch)
 
 				epoch_loss += loss.item()
 
@@ -236,10 +236,13 @@ class Solver(object):
 		DC = 0.  # Dice Coefficient
 		length = 0
 		pbar_test = tqdm(total=len(self.test_loader), desc='Testing')
+		batch = 0
 		for images, GT in self.test_loader:
+			batch += 1
 			images = images.to(self.device)
 			GT = GT.to(self.device)
 			SR = torch.sigmoid(self.unet(images))
+			test_saver(path=self.result_path, imgs=SR, GTs=GT, batch=batch)
 			acc += get_accuracy(SR, GT)
 			SE += get_sensitivity(SR, GT)
 			SP += get_specificity(SR, GT)
