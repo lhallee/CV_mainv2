@@ -29,6 +29,7 @@ class Solver(object):
 		self.loss = config.loss
 		self.img_ch = config.img_ch
 		self.output_ch = config.output_ch
+		self.data_type = config.data_type
 
 		# Hyper-parameters
 		self.lr = config.lr
@@ -50,6 +51,7 @@ class Solver(object):
 		self.model_type = config.model_type
 		self.t = config.t
 		self.build_model()
+		self.unet_path = self.model_path + self.model_type + self.data_type + self.loss + str(self.num_epochs) + str(self.lr) + '.pkl'
 
 	def build_model(self):
 		if self.model_type == 'U_Net':
@@ -111,7 +113,6 @@ class Solver(object):
 		return img
 	'''
 	def train(self):
-		self.unet_path = self.model_path + self.model_type + str(self.num_epochs) + str(self.lr)
 		epoch = 0
 		while epoch < self.num_epochs and self.best_unet_score < 1.95:
 		#for epoch in range(self.num_epochs):
@@ -184,7 +185,6 @@ class Solver(object):
 		SP = 0.  # Specificity
 		PC = 0.  # Precision
 		F1 = 0.  # F1 Score
-		JS = 0.  # Jaccard Similarity
 		DC = 0.  # Dice Coefficient
 		length = 0
 		for images, GT in self.valid_loader:
@@ -211,19 +211,6 @@ class Solver(object):
 		print('[Validation] Acc: %.4f, RE: %.4f, SP: %.4f, PC: %.4f, F1: %.4f, DC: %.4f' % (
 		acc, RE, SP, PC, F1, DC))
 
-
-		'''
-				torchvision.utils.save_image(images.data.cpu(),
-											os.path.join(self.result_path,
-														'%s_valid_%d_image.png'%(self.model_type,epoch+1)))
-				torchvision.utils.save_image(SR.data.cpu(),
-											os.path.join(self.result_path,
-														'%s_valid_%d_SR.png'%(self.model_type,epoch+1)))
-				torchvision.utils.save_image(GT.data.cpu(),
-											os.path.join(self.result_path,
-														'%s_valid_%d_GT.png'%(self.model_type,epoch+1)))
-		'''
-
 		# Save Best U-Net model
 		if unet_score > self.best_unet_score:
 			self.best_unet_score = unet_score
@@ -244,7 +231,6 @@ class Solver(object):
 		SP = 0.  # Specificity
 		PC = 0.  # Precision
 		F1 = 0.  # F1 Score
-		JS = 0.  # Jaccard Similarity
 		DC = 0.  # Dice Coefficient
 		length = 0
 		pbar_test = tqdm(total=len(self.test_loader), desc='Testing')
@@ -254,7 +240,8 @@ class Solver(object):
 			images = images.to(self.device)
 			GT = GT.to(self.device)
 			SR = self.unet(images)
-			test_saver(path=self.result_path, imgs=SR, GTs=GT, batch=batch)
+			test_saver(path=self.result_path, feed_img=images.detach().cpu().numpy(),
+					   imgs=SR.detach().cpu().numpy(), GTs=GT.detach().cpu().numpy(), batch=batch)
 			_acc, _DC, _PC, _RE, _SP, _F1 = _calculate_overlap_metrics(SR.detach().cpu(), GT.detach().cpu())
 			acc += _acc.item()
 			DC += _DC.item()
