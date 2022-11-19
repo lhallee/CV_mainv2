@@ -48,7 +48,6 @@ def to_dataloader_mock(dim=256, train_per=0.7,
                        batch_size=8, num_cpu=os.cpu_count()):
     imgs = np.concatenate([create_square(3000, 1500, 1500, i * 50)[0] for i in range(15)])
     GTs = np.concatenate([create_square(3000, 1500, 1500, i * 50)[1] for i in range(15)])
-    print(imgs.shape, GTs.shape)
     assert len(imgs) == len(GTs), 'Need GT for every Image.'
     crop_imgs = np.concatenate([crop_augment_mock(imgs[i], GTs[i], dim, int(dim/2))[0] for i in tqdm(range(len(imgs)))])
     crop_GTs = np.concatenate([crop_augment_mock(imgs[i], GTs[i], dim, int(dim/2))[1] for i in tqdm(range(len(imgs)))])
