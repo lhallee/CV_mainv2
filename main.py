@@ -40,7 +40,7 @@ def main(config):
         preview_crops(vis_imgs, vis_GTs, config.num_class)
         solver = Solver(config, train_loader, valid_loader, test_loader)
     elif config.data_type == 'Mock':
-        train_loader, valid_loader, test_loader = file_to_dataloader(dim=config.image_size,
+        train_loader, valid_loader, test_loader = to_dataloader_mock(dim=config.image_size,
                                                                      train_per=config.train_per,
                                                                      batch_size=config.batch_size
                                                                      )
