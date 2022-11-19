@@ -234,12 +234,10 @@ class Solver(object):
 
 	@torch.no_grad()
 	def test(self):
-		# ===================================== Test ====================================#
-		if self.best_unet is not None:
-			self.unet = self.best_unet
-		else:
-			self.build_model()
-			self.unet.load_state_dict(torch.load(self.unet_path))
+		del self.unet
+		del self.best_unet
+		self.build_model()
+		self.unet.load_state_dict(torch.load(self.unet_path))
 
 		acc = 0.  # Accuracy
 		RE = 0.  # Sensitivity (Recall)
@@ -277,6 +275,6 @@ class Solver(object):
 
 		f = open(os.path.join(self.result_path, 'result.csv'), 'a', encoding='utf-8', newline='')
 		wr = csv.writer(f)
-		wr.writerow([self.model_type, acc, RE, SP, PC, F1, DC, self.lr, self.best_epoch, self.num_epochs])
+		wr.writerow([self.model_type, acc, RE, SP, PC, F1, DC, unet_score, self.lr, self.best_epoch, self.num_epochs])
 		f.close()
 		pbar_test.close()
