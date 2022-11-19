@@ -12,3 +12,6 @@ def create_square(dim, x, y, z):
 
 
 imgs = np.concatenate([create_square(400, 200, 200, i) for i in range(15)])
+
+test = np.mean(np.zeros((128, 128, 3)), -1)
+print(test.shape)

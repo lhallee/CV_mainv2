@@ -1,10 +1,12 @@
 import os
 import numpy as np
 import torch
+import torch.nn as nn
 from torch import optim
 from tqdm import tqdm
 from metrics import _calculate_overlap_metrics
 from models import U_Net, R2U_Net, AttU_Net, R2AttU_Net
+from custom_model_components import *
 from plots import checker, test_saver
 import csv
 
@@ -23,9 +25,10 @@ class Solver(object):
 		self.unet_path = None
 		self.optimizer = None
 		self.best_epoch = None
+		self.criterion = None
+		self.loss = config.loss
 		self.img_ch = config.img_ch
 		self.output_ch = config.output_ch
-		self.criterion = torch.nn.BCELoss()
 
 		# Hyper-parameters
 		self.lr = config.lr
@@ -36,6 +39,7 @@ class Solver(object):
 		# Training settings
 		self.num_epochs = config.num_epochs
 		self.batch_size = config.batch_size
+		self.best_unet_score = 0
 
 		# Path
 		self.model_path = config.model_path
@@ -48,7 +52,6 @@ class Solver(object):
 		self.build_model()
 
 	def build_model(self):
-		"""Build generator and discriminator."""
 		if self.model_type == 'U_Net':
 			self.unet = U_Net(img_ch=self.img_ch, output_ch=self.output_ch)
 		elif self.model_type == 'R2U_Net':
@@ -57,6 +60,15 @@ class Solver(object):
 			self.unet = AttU_Net(img_ch=self.img_ch, output_ch=self.output_ch)
 		elif self.model_type == 'R2AttU_Net':
 			self.unet = R2AttU_Net(img_ch=self.img_ch, output_ch=self.output_ch, t=self.t)
+
+		if self.loss == 'BCE':
+			self.criterion = nn.BCELoss()
+		elif self.loss == 'DiceBCE':
+			self.criterion = DiceBCELoss()
+		elif self.loss == 'IOU':
+			self.criterion = IoULoss()
+		elif self.loss == 'CE':
+			self.criterion = nn.CrossEntropyLoss()
 
 		self.optimizer = optim.Adam(list(self.unet.parameters()), self.lr, (self.beta1, self.beta2))
 		if self.scheduler == 'exp':
@@ -100,7 +112,9 @@ class Solver(object):
 	'''
 	def train(self):
 		self.unet_path = self.model_path + self.model_type + str(self.num_epochs) + str(self.lr)
-		for epoch in range(self.num_epochs):
+		epoch = 0
+		while epoch < self.num_epochs and self.best_unet_score < 1.95:
+		#for epoch in range(self.num_epochs):
 			epoch_loss = 0
 			acc = 0.  # Accuracy
 			RE = 0.  # Sensitivity (Recall)
@@ -110,7 +124,7 @@ class Solver(object):
 			DC = 0.  # Dice Coefficient
 			length = 0
 			pbar_train = tqdm(total=len(self.train_loader), desc='Training')
-			batch = 0
+			batch = 1
 			for images, GT in self.train_loader:
 				images = images.to(self.device)
 				GT = GT.to(self.device)
@@ -121,8 +135,10 @@ class Solver(object):
 				#GT_flat = GT.view(GT.size(0), -1)
 
 				loss = self.criterion(SR, GT)
-				if batch % 50 == 0:
-					checker(path=self.result_path, imgs=SR, GTs=GT, epoch=epoch, batch=batch, num_class=self.output_ch + 1)
+				if epoch % 5 == 0 and batch == 1:
+					checker(path=self.result_path, feed_img=images.detach().cpu().numpy(),
+							imgs=SR.detach().cpu().numpy(), GTs=GT.detach().cpu().numpy(),
+							epoch=epoch, batch=batch, num_class=self.output_ch + 1)
 
 				epoch_loss += loss.item()
 
@@ -140,7 +156,7 @@ class Solver(object):
 				SP += _SP.item()
 				PC += _PC.item()
 				F1 += _F1.item()
-				length += images.size(0)
+				length += 1
 				batch += 1
 				pbar_train.update(1)
 
@@ -160,9 +176,9 @@ class Solver(object):
 			)
 			pbar_train.close()
 			self.valid(epoch)
+			epoch += 1
 	@torch.no_grad()
 	def valid(self, epoch):
-		best_unet_score = 0.0
 		acc = 0.  # Accuracy
 		RE = 0.  # Sensitivity (Recall)
 		SP = 0.  # Specificity
@@ -182,8 +198,7 @@ class Solver(object):
 			SP += _SP.item()
 			PC += _PC.item()
 			F1 += _F1.item()
-
-			length += images.size(0)
+			length += 1
 
 		acc = acc / length
 		RE = RE / length
@@ -210,11 +225,11 @@ class Solver(object):
 		'''
 
 		# Save Best U-Net model
-		if unet_score > best_unet_score:
-			best_unet_score = unet_score
+		if unet_score > self.best_unet_score:
+			self.best_unet_score = unet_score
 			self.best_epoch = epoch
 			self.best_unet = self.unet.state_dict()
-			print('Best %s model score : %.4f' % (self.model_type, best_unet_score))
+			print('Best %s model score : %.4f' % (self.model_type, self.best_unet_score))
 			torch.save(self.best_unet, self.unet_path)
 
 	@torch.no_grad()
@@ -249,7 +264,7 @@ class Solver(object):
 			SP += _SP.item()
 			PC += _PC.item()
 			F1 += _F1.item()
-			length += images.size(0)
+			length += 1
 			pbar_test.update(1)
 
 		acc = acc / length
