@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import torch
+import torchvision
 from torch.utils import data
 from skimage.util import view_as_windows
 from tqdm import tqdm
@@ -79,18 +80,26 @@ def crop_augment(img_paths, GT_paths, dim, step, num_class):
     imgs_90 = np.copy(imgs)
     imgs_vflip = np.copy(imgs)
     imgs_hflip = np.copy(imgs)
+    imgs_jitter = torch.tensor(np.transpose(np.copy(imgs), axes=(0, 3, 1, 2)), dtype=torch.float32)
     GTs_90 = np.copy(GTs)
     GTs_vflip = np.copy(GTs)
     GTs_hflip = np.copy(GTs)
+    GTs_jitter = np.copy(GTs)
     for i in range(len(imgs)):
         imgs_90[i] = np.rot90(imgs_90[i])
         imgs_vflip[i] = np.flipud(imgs_vflip[i])
         imgs_hflip[i] = np.fliplr(imgs_hflip[i])
+        transform = torchvision.transforms.ColorJitter(np.random.uniform(0.0, 0.4),
+                                                       np.random.uniform(0.0, 0.4),
+                                                       np.random.uniform(0.0, 0.4),
+                                                       np.random.uniform(0.0, 0.4))
+        imgs_jitter[i] = transform(imgs_jitter[i])
         GTs_90[i] = np.rot90(GTs_90[i])
         GTs_vflip[i] = np.flipud(GTs_vflip[i])
         GTs_hflip[i] = np.fliplr(GTs_hflip[i])
-    final_crops = np.concatenate((imgs, imgs_90, imgs_vflip, imgs_hflip), axis=0)
-    final_crops_GT = np.concatenate((GTs, GTs_90, GTs_vflip, GTs_hflip), axis=0)
+    imgs_jitter = np.transpose(np.array(imgs_jitter), axes=(0, 2, 3, 1))
+    final_crops = np.concatenate((imgs, imgs_90, imgs_vflip, imgs_hflip, imgs_jitter), axis=0)
+    final_crops_GT = np.concatenate((GTs, GTs_90, GTs_vflip, GTs_hflip, GTs_jitter), axis=0)
     return final_crops, final_crops_GT
 
 def file_to_dataloader(img_path, GT_path,
