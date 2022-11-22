@@ -9,10 +9,6 @@ from PIL import Image
 from glob import glob
 from sklearn.model_selection import train_test_split
 
-working_dir = 'C:/Users/Logan Hallee/Desktop/Segmentation/CV_mainv2'
-img_path = working_dir + '/img/'
-GT_path = working_dir + '/GT/'
-
 def to_categorical(y, num_classes=None, dtype="float32"):
     """Converts a class vector (integers) to binary class matrix.
     E.g. for use with `categorical_crossentropy`.
@@ -51,9 +47,9 @@ class ImageSet(data.Dataset):
         GT = self.GTs[index]
         return img, GT
 
-def crop_augment(img_paths, GT_paths, dim, step, num_class):
-    img = np.array(Image.open(img_paths)) / 255.0
-    GT = np.array(Image.open(GT_paths))
+def crop_augment(img_path, GT_path, dim, step, num_class):
+    img = np.array(Image.open(img_path)) / 255.0
+    GT = np.array(Image.open(GT_path))
     a, b = GT.shape
     GT = GT.reshape(a, b, 1)
     imgs = view_as_windows(img, (dim, dim, 3), step=step)
@@ -105,11 +101,11 @@ def crop_augment(img_paths, GT_paths, dim, step, num_class):
 def file_to_dataloader(img_path, GT_path,
                        dim=256, num_class=2, train_per=0.7,
                        batch_size=8, num_cpu=os.cpu_count()):
-    imgs = sorted(glob(img_path + '*.png'))
-    GTs = sorted(glob(GT_path + '*.png'))
-    assert len(imgs) == len(GTs), 'Need GT for every Image.'
-    crop_imgs = np.concatenate([crop_augment(imgs[i], GTs[i], dim, int(dim/2), num_class)[0] for i in tqdm(range(len(imgs)))])
-    crop_GTs = np.concatenate([crop_augment(imgs[i], GTs[i], dim, int(dim/2), num_class)[1] for i in tqdm(range(len(imgs)))])
+    img_paths = sorted(glob(img_path + '*.png'))
+    GT_paths = sorted(glob(GT_path + '*.png'))
+    assert len(img_paths) == len(GT_paths), 'Need GT for every Image.'
+    crop_imgs = np.concatenate([crop_augment(img_paths[i], GT_paths[i], dim, int(dim/2), num_class)[0] for i in tqdm(range(len(img_paths)))])
+    crop_GTs = np.concatenate([crop_augment(img_paths[i], GT_paths[i], dim, int(dim/2), num_class)[1] for i in tqdm(range(len(img_paths)))])
     crop_imgs = torch.tensor(np.transpose(crop_imgs, axes=(0, 3, 1, 2)), dtype=torch.float)
     crop_GTs = torch.tensor(np.transpose(crop_GTs, axes=(0, 3, 1, 2)), dtype=torch.float)
     X_train, X_mem, y_train, y_mem = train_test_split(crop_imgs, crop_GTs, train_size=train_per)
