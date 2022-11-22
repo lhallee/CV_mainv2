@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch.nn import init
 #Adapted from https://github.com/LeeJunHyun/Image_Segmentation
 
-def init_weights(net, init_type='normal', gain=0.02):
+def init_weights(net, init_type='xavier', gain=0.02):
     def init_func(m):
         classname = m.__class__.__name__
         if hasattr(m, 'weight') and (classname.find('Conv') != -1 or classname.find('Linear') != -1):
@@ -165,6 +165,7 @@ class U_Net(nn.Module):
         self.Up_conv2 = conv_block(ch_in=128, ch_out=64)
 
         self.Conv_1x1 = nn.Conv2d(64, output_ch, kernel_size=1, stride=1, padding=0)
+        self.out = nn.Sigmoid()
 
     def forward(self, x):
         # encoding path
@@ -201,8 +202,9 @@ class U_Net(nn.Module):
         d2 = self.Up_conv2(d2)
 
         d1 = self.Conv_1x1(d2)
+        out = self.out(d1)
 
-        return d1
+        return out
 
 
 class R2U_Net(nn.Module):
@@ -235,6 +237,7 @@ class R2U_Net(nn.Module):
         self.Up_RRCNN2 = RRCNN_block(ch_in=128, ch_out=64, t=t)
 
         self.Conv_1x1 = nn.Conv2d(64, output_ch, kernel_size=1, stride=1, padding=0)
+        self.out = nn.Sigmoid()
 
     def forward(self, x):
         # encoding path
@@ -270,8 +273,9 @@ class R2U_Net(nn.Module):
         d2 = self.Up_RRCNN2(d2)
 
         d1 = self.Conv_1x1(d2)
+        out = self.out(d1)
 
-        return d1
+        return out
 
 
 class AttU_Net(nn.Module):
@@ -303,6 +307,7 @@ class AttU_Net(nn.Module):
         self.Up_conv2 = conv_block(ch_in=128, ch_out=64)
 
         self.Conv_1x1 = nn.Conv2d(64, output_ch, kernel_size=1, stride=1, padding=0)
+        self.out = nn.Sigmoid()
 
     def forward(self, x):
         # encoding path
@@ -342,8 +347,9 @@ class AttU_Net(nn.Module):
         d2 = self.Up_conv2(d2)
 
         d1 = self.Conv_1x1(d2)
+        out = self.out(d1)
 
-        return d1
+        return out
 
 
 class R2AttU_Net(nn.Module):
