@@ -48,7 +48,7 @@ class ImageSet(data.Dataset):
         return img, GT
 
 
-def crop_augment(img_path, GT_path, dim, step, num_class):
+def crop_augment(img_path, GT_path, dim, step, num_class, filter):
     img = np.array(Image.open(img_path)) / 255.0
     GT = np.array(Image.open(GT_path))
     a, b = GT.shape
@@ -64,15 +64,16 @@ def crop_augment(img_path, GT_path, dim, step, num_class):
     if num_class == 3:
         GTs[GTs == 0] = 1
         GTs = GTs - 1
-    delete_list = []
-    for i in range(len(imgs)):
-        per = (np.count_nonzero(np.array(GTs[i])) / (dim * dim)) * 100
-        if (per < 0.01):
-            delete_list.append(i)
-        else:
-            continue
-    imgs = np.delete(imgs, delete_list, 0)
-    GTs = np.delete(GTs, delete_list, 0)
+    if filter:
+        delete_list = []
+        for i in range(len(imgs)):
+            per = (np.count_nonzero(np.array(GTs[i])) / (dim * dim)) * 100
+            if (per < 0.01):
+                delete_list.append(i)
+            else:
+                continue
+        imgs = np.delete(imgs, delete_list, 0)
+        GTs = np.delete(GTs, delete_list, 0)
     #GTs = to_categorical(GTs, num_classes=num_class)
     imgs_90 = np.copy(imgs)
     imgs_vflip = np.copy(imgs)
@@ -101,12 +102,13 @@ def crop_augment(img_path, GT_path, dim, step, num_class):
 
 def file_to_dataloader(img_path, GT_path,
                        dim=256, num_class=2, train_per=0.7,
-                       batch_size=8, num_cpu=os.cpu_count()):
+                       batch_size=8, num_cpu=os.cpu_count(),
+                       filter=True):
     img_paths = sorted(glob(img_path + '*.png'))
     GT_paths = sorted(glob(GT_path + '*.png'))
     assert len(img_paths) == len(GT_paths), 'Need GT for every Image.'
-    crop_imgs = np.concatenate([crop_augment(img_paths[i], GT_paths[i], dim, int(dim/2), num_class)[0] for i in tqdm(range(len(img_paths)))])
-    crop_GTs = np.concatenate([crop_augment(img_paths[i], GT_paths[i], dim, int(dim/2), num_class)[1] for i in tqdm(range(len(img_paths)))])
+    crop_imgs = np.concatenate([crop_augment(img_paths[i], GT_paths[i], dim, int(dim/2), num_class, filter)[0] for i in tqdm(range(len(img_paths)))])
+    crop_GTs = np.concatenate([crop_augment(img_paths[i], GT_paths[i], dim, int(dim/2), num_class, filter)[1] for i in tqdm(range(len(img_paths)))])
     crop_imgs = torch.tensor(np.transpose(crop_imgs, axes=(0, 3, 1, 2)), dtype=torch.float)
     crop_GTs = torch.tensor(np.transpose(crop_GTs, axes=(0, 3, 1, 2)), dtype=torch.float)
     X_train, X_mem, y_train, y_mem = train_test_split(crop_imgs, crop_GTs, train_size=train_per)

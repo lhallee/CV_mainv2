@@ -81,7 +81,8 @@ def run_from_main():
     parser.add_argument('--GT_path', type=str, default='./GT/')
     parser.add_argument('--cuda_idx', type=int, default=0)
     parser.add_argument('--train_per', type=float, default=0.7, help='Percentage of training data in dataloaders')
-    parser.add_argument('--data_type', type=str, default='Mock', help='Real or Mock data')
+    parser.add_argument('--data_type', type=str, default='Real', help='Real or Mock data')
+    parser.add_argument('--filter', type=bool, default=True, help='Filter background images or not')
     config = parser.parse_args(args=[])
     main(config)
 
@@ -112,6 +113,7 @@ if __name__ == '__main__':
     parser.add_argument('--cuda_idx', type=int, default=0)
     parser.add_argument('--train_per', type=float, default=0.7, help='Percentage of training data in dataloaders')
     parser.add_argument('--data_type', type=str, default='Real', help='Real or Mock data')
+    parser.add_argument('--filter', type=bool, default=True, help='Filter background images or not')
 
     config = parser.parse_args()
     main(config)
