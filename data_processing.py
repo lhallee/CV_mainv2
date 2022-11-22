@@ -47,6 +47,7 @@ class ImageSet(data.Dataset):
         GT = self.GTs[index]
         return img, GT
 
+
 def crop_augment(img_path, GT_path, dim, step, num_class):
     img = np.array(Image.open(img_path)) / 255.0
     GT = np.array(Image.open(GT_path))
