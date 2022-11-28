@@ -36,7 +36,7 @@ def main(config):
                                                                      batch_size=config.batch_size
                                                                      )
         print(len(train_loader), len(valid_loader), len(test_loader))
-        vis_imgs, vis_GTs = train_loader.dataset[:3]
+        vis_imgs, vis_GTs = train_loader.dataset[:10]
         preview_crops(vis_imgs, vis_GTs, config.num_class)
         solver = Solver(config, train_loader, valid_loader, test_loader)
     elif config.data_type == 'Mock':
@@ -45,7 +45,7 @@ def main(config):
                                                                      batch_size=config.batch_size
                                                                      )
         print(len(train_loader), len(valid_loader), len(test_loader))
-        vis_imgs, vis_GTs = train_loader.dataset[:3]
+        vis_imgs, vis_GTs = train_loader.dataset[:10]
         preview_crops(vis_imgs, vis_GTs, config.num_class)
         solver = Solver(config, train_loader, valid_loader, test_loader)
 
@@ -83,6 +83,7 @@ def run_from_main():
     parser.add_argument('--train_per', type=float, default=0.7, help='Percentage of training data in dataloaders')
     parser.add_argument('--data_type', type=str, default='Real', help='Real or Mock data')
     parser.add_argument('--filter', type=bool, default=True, help='Filter background images or not')
+    parser.add_argument('--progress', type=bool, default=True, help='Save images over time or not')
     config = parser.parse_args(args=[])
     main(config)
 
@@ -114,6 +115,7 @@ if __name__ == '__main__':
     parser.add_argument('--train_per', type=float, default=0.7, help='Percentage of training data in dataloaders')
     parser.add_argument('--data_type', type=str, default='Real', help='Real or Mock data')
     parser.add_argument('--filter', type=bool, default=True, help='Filter background images or not')
+    parser.add_argument('--progress', type=bool, default=False, help='Save images over time or not')
 
     config = parser.parse_args()
     main(config)

@@ -53,6 +53,7 @@ class Solver(object):
         self.build_model()
         self.unet_path = self.model_path + self.model_type + self.data_type + self.loss + str(self.num_epochs) + str(
             self.lr) + '.pkl'
+        self.progress = config.progress
 
     def build_model(self):
         if self.model_type == 'U_Net':
@@ -92,36 +93,9 @@ class Solver(object):
         print(name)
         print("The number of parameters: {}".format(num_params))
 
-    def to_data(self, x):
-        """Convert variable to tensor."""
-        if torch.cuda.is_available():
-            x = x.cpu()
-        return x.data
-
-    def update_lr(self, g_lr, d_lr):
-        for param_group in self.optimizer.param_groups:
-            param_group['lr'] = lr
-
-    def reset_grad(self):
-        """Zero the gradient buffers."""
-        self.unet.zero_grad()
-
-    def compute_accuracy(self, SR, GT):
-        SR_flat = SR.view(-1)
-        GT_flat = GT.view(-1)
-
-        acc = GT_flat.data.cpu() == (SR_flat.data.cpu() > 0.5)
-
-    '''
-	def tensor2img(self, x):
-		img = (x[:, 0, :, :] > x[:, 1, :, :]).float()
-		img = img * 255
-		return img
-	'''
-
     def train(self):
         epoch = 0
-        while epoch < self.num_epochs and self.best_unet_score < 1.95:
+        while epoch < self.num_epochs and self.best_unet_score < 0.95:
             # for epoch in range(self.num_epochs):
             epoch_loss = 0
             acc = 0.  # Accuracy
@@ -138,12 +112,9 @@ class Solver(object):
                 GT = GT.to(self.device)
                 # SR : Segmentation Result
                 SR = self.unet(images)
-                # SR_probs = torch.sigmoid(SR)
-                # SR_flat = SR_probs.view(SR_probs.size(0), -1)
-                # GT_flat = GT.view(GT.size(0), -1)
 
                 loss = self.criterion(SR, GT)
-                if epoch % 5 == 0 and batch == 1:
+                if self.progress and batch == 1:
                     checker(path=self.result_path, feed_img=images.detach().cpu().numpy(),
                             imgs=SR.detach().cpu().numpy(), GTs=GT.detach().cpu().numpy(),
                             epoch=epoch, batch=batch, num_class=self.output_ch + 1)
@@ -214,7 +185,7 @@ class Solver(object):
         PC = PC / length
         F1 = F1 / length
         DC = DC / length
-        unet_score = F1 + DC
+        unet_score = (F1 + DC + PC + SP + RE + acc) / 6
 
         print('[Validation] Acc: %.4f, RE: %.4f, SP: %.4f, PC: %.4f, F1: %.4f, DC: %.4f' % (
             acc, RE, SP, PC, F1, DC))
@@ -266,7 +237,7 @@ class Solver(object):
         PC = PC / length
         F1 = F1 / length
         DC = DC / length
-        unet_score = F1 + DC
+        unet_score = (F1 + DC + PC + SP + RE + acc) / 6
 
         f = open(os.path.join(self.result_path, 'result.csv'), 'a', encoding='utf-8', newline='')
         wr = csv.writer(f)
