@@ -3,7 +3,7 @@ import os
 import torch
 import torchvision
 import cv2
-from natsort import os_sorted
+from natsort import natsorted
 from torch.utils import data
 from skimage.util import view_as_windows
 from tqdm import tqdm
@@ -74,10 +74,10 @@ class Imageset_processing:
         self.num_cpu = os.cpu_count()
 
     def load_imgs(self):
-        img_paths = os_sorted(glob(self.img_path + '*.png'))  # natural sort
-        GT_paths = os_sorted(glob(self.GT_path + '*.png'))
+        img_paths = natsorted(glob(self.img_path + '*.png'))  # natural sort
+        GT_paths = natsorted(glob(self.GT_path + '*.png'))
         assert len(img_paths) == len(GT_paths), 'Need GT for every Image.'
-        eval_paths = os_sorted(glob(self.eval_path + '*.png'))
+        eval_paths = natsorted(glob(self.eval_path + '*.png'))
         return img_paths, GT_paths, eval_paths
 
     def crop_augment(self, img, GT):
