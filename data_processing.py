@@ -81,8 +81,8 @@ class Imageset_processing:
         return img_paths, GT_paths, eval_paths
 
     def crop_augment(self, img, GT):
-        img = cv2.imread(img, 1) / 255.0 #read and scale img
-        GT = cv2.imread(GT, 0)
+        img = np.array(cv2.imread(img, 1)) / 255.0 #read and scale img
+        GT = np.array(cv2.imread(GT, 2), dtype=np.float32)
         a, b = GT.shape
         GT = GT.reshape(a, b, 1) #reshape for view_as_windows
         imgs = view_as_windows(img, (self.dim, self.dim, 3), step=self.dim)
@@ -90,6 +90,7 @@ class Imageset_processing:
         a, b, c, d, e, f = imgs.shape
         imgs = imgs.reshape(a * b, self.dim, self.dim, 3) #reshape windowed output into num_images, dim, dim channel
         GTs = GTs.reshape(a * b, self.dim, self.dim, 1)
+
         if self.num_class == 2: #format GTs (similar to to_categorical)
             GTs[GTs < 1] = 0
             GTs[GTs > 0] = 1
@@ -133,7 +134,6 @@ class Imageset_processing:
         #numpy array to torch tensor, move around columns for pytorch convolution
         crop_imgs = np.transpose(crop_imgs, axes=(0, 3, 1, 2))
         crop_GTs = np.transpose(crop_GTs, axes=(0, 3, 1, 2))
-        print(crop_imgs.shape, crop_GTs.shape)
         #split into train and mem
         X_train, X_mem, y_train, y_mem = train_test_split(crop_imgs, crop_GTs, train_size=self.train_per)
         #split mem into valid and test
