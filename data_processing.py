@@ -2,13 +2,14 @@ import numpy as np
 import os
 import torch
 import torchvision
+import cv2
+from natsort import os_sorted
 from torch.utils import data
 from skimage.util import view_as_windows
 from tqdm import tqdm
-from PIL import Image
 from glob import glob
 from sklearn.model_selection import train_test_split
-
+'''
 def to_categorical(y, num_classes=None, dtype="float32"):
     """Converts a class vector (integers) to binary class matrix.
     E.g. for use with `categorical_crossentropy`.
@@ -35,7 +36,10 @@ def to_categorical(y, num_classes=None, dtype="float32"):
     output_shape = input_shape + (num_classes,)
     categorical = np.reshape(categorical, output_shape)
     return categorical
+'''
 
+
+#Custom pytorch dataset, simply indexes imgs and gts
 class ImageSet(data.Dataset):
     def __init__(self, imgs, GTs):
         self.imgs = imgs
@@ -43,81 +47,145 @@ class ImageSet(data.Dataset):
     def __len__(self):
         return len(self.imgs)
     def __getitem__(self, index):
-        img = self.imgs[index]
-        GT = self.GTs[index]
+        img = torch.tensor(self.imgs[index], dtype=torch.float)
+        GT = torch.tensor(self.GTs[index], dtype=torch.float)
         return img, GT
 
+class ReconSet(data.Dataset):
+    def __init__(self, imgs):
+        self.imgs = imgs
+    def __len__(self):
+        return len(self.imgs)
+    def __getitem__(self, index):
+        img = torch.tensor(self.imgs[index], dtype=torch.float)
+        return img
 
-def crop_augment(img_path, GT_path, dim, step, num_class, filter):
-    img = np.array(Image.open(img_path)) / 255.0
-    GT = np.array(Image.open(GT_path))
-    a, b = GT.shape
-    GT = GT.reshape(a, b, 1)
-    imgs = view_as_windows(img, (dim, dim, 3), step=step)
-    GTs = view_as_windows(GT, (dim, dim, 1), step=step)
-    a, b, c, d, e, f = imgs.shape
-    imgs = imgs.reshape(a * b, dim, dim, 3)
-    GTs = GTs.reshape(a * b, dim, dim, 1)
-    if num_class == 2:
-        GTs[GTs < 1] = 0
-        GTs[GTs > 0] = 1
-    if num_class == 3:
-        GTs[GTs == 0] = 1
-        GTs = GTs - 1
-    if filter:
-        delete_list = []
+
+class Imageset_processing:
+    def __init__(self, config):
+        self.img_path = config.img_path
+        self.GT_path = config.GT_path
+        self.eval_path = config.eval_img_path
+        self.eval_type = config.eval_type
+        self.dim = config.image_size
+        self.num_class = config.num_class
+        self.train_per = config.train_per
+        self.batch_size = config.batch_size
+        self.num_cpu = os.cpu_count()
+
+    def load_imgs(self):
+        img_paths = os_sorted(glob(self.img_path + '*.png'))  # natural sort
+        GT_paths = os_sorted(glob(self.GT_path + '*.png'))
+        assert len(img_paths) == len(GT_paths), 'Need GT for every Image.'
+        eval_paths = os_sorted(glob(self.eval_path + '*.png'))
+        return img_paths, GT_paths, eval_paths
+
+    def crop_augment(self, img, GT):
+        img = cv2.imread(img, 1) / 255.0 #read and scale img
+        GT = cv2.imread(GT, 0)
+        a, b = GT.shape
+        GT = GT.reshape(a, b, 1) #reshape for view_as_windows
+        imgs = view_as_windows(img, (self.dim, self.dim, 3), step=self.dim)
+        GTs = view_as_windows(GT, (self.dim, self.dim, 1), step=self.dim)
+        a, b, c, d, e, f = imgs.shape
+        imgs = imgs.reshape(a * b, self.dim, self.dim, 3) #reshape windowed output into num_images, dim, dim channel
+        GTs = GTs.reshape(a * b, self.dim, self.dim, 1)
+        if self.num_class == 2: #format GTs (similar to to_categorical)
+            GTs[GTs < 1] = 0
+            GTs[GTs > 0] = 1
+        if self.num_class == 3:
+            GTs[GTs == 0] = 1
+            GTs = GTs - 1
+        imgs_90 = np.copy(imgs) #copy images for various augmentations
+        imgs_vflip = np.copy(imgs)
+        imgs_hflip = np.copy(imgs)
+        #reshape for torch augmentation
+        imgs_jitter = torch.tensor(np.transpose(np.copy(imgs), axes=(0, 3, 1, 2)), dtype=torch.float32)
+        GTs_90 = np.copy(GTs)
+        GTs_vflip = np.copy(GTs)
+        GTs_hflip = np.copy(GTs)
+        GTs_jitter = np.copy(GTs)
         for i in range(len(imgs)):
-            per = (np.count_nonzero(np.array(GTs[i])) / (dim * dim)) * 100
-            if (per < 0.01):
-                delete_list.append(i)
-            else:
-                continue
-        imgs = np.delete(imgs, delete_list, 0)
-        GTs = np.delete(GTs, delete_list, 0)
-    #GTs = to_categorical(GTs, num_classes=num_class)
-    imgs_90 = np.copy(imgs)
-    imgs_vflip = np.copy(imgs)
-    imgs_hflip = np.copy(imgs)
-    imgs_jitter = torch.tensor(np.transpose(np.copy(imgs), axes=(0, 3, 1, 2)), dtype=torch.float32)
-    GTs_90 = np.copy(GTs)
-    GTs_vflip = np.copy(GTs)
-    GTs_hflip = np.copy(GTs)
-    GTs_jitter = np.copy(GTs)
-    for i in range(len(imgs)):
-        imgs_90[i] = np.rot90(imgs_90[i])
-        imgs_vflip[i] = np.flipud(imgs_vflip[i])
-        imgs_hflip[i] = np.fliplr(imgs_hflip[i])
-        transform = torchvision.transforms.ColorJitter(np.random.uniform(0.0, 0.4),
-                                                       np.random.uniform(0.0, 0.4),
-                                                       np.random.uniform(0.0, 0.4),
-                                                       np.random.uniform(0.0, 0.4))
-        imgs_jitter[i] = transform(imgs_jitter[i])
-        GTs_90[i] = np.rot90(GTs_90[i])
-        GTs_vflip[i] = np.flipud(GTs_vflip[i])
-        GTs_hflip[i] = np.fliplr(GTs_hflip[i])
-    imgs_jitter = np.transpose(np.array(imgs_jitter), axes=(0, 2, 3, 1))
-    final_crops = np.concatenate((imgs, imgs_90, imgs_vflip, imgs_hflip, imgs_jitter), axis=0)
-    final_crops_GT = np.concatenate((GTs, GTs_90, GTs_vflip, GTs_hflip, GTs_jitter), axis=0)
-    return final_crops, final_crops_GT
+            imgs_90[i] = np.rot90(imgs_90[i])
+            imgs_vflip[i] = np.flipud(imgs_vflip[i])
+            imgs_hflip[i] = np.fliplr(imgs_hflip[i])
+            #perform various jitter augmentations with a new probability each time
+            transform = torchvision.transforms.ColorJitter(np.random.uniform(0.0, 0.4),
+                                                           np.random.uniform(0.0, 0.4),
+                                                           np.random.uniform(0.0, 0.4),
+                                                           np.random.uniform(0.0, 0.4))
+            imgs_jitter[i] = transform(imgs_jitter[i])
+            GTs_90[i] = np.rot90(GTs_90[i])
+            GTs_vflip[i] = np.flipud(GTs_vflip[i])
+            GTs_hflip[i] = np.fliplr(GTs_hflip[i])
+        imgs_jitter = np.transpose(np.array(imgs_jitter), axes=(0, 2, 3, 1)) #reshape back to normal
+        final_crops = np.concatenate((imgs, imgs_90, imgs_vflip, imgs_hflip, imgs_jitter)) #combine all together
+        final_crops_GT = np.concatenate((GTs, GTs_90, GTs_vflip, GTs_hflip, GTs_jitter))
+        return final_crops, final_crops_GT
 
-def file_to_dataloader(img_path, GT_path,
-                       dim=256, num_class=2, train_per=0.7,
-                       batch_size=8, num_cpu=os.cpu_count(),
-                       filter=True):
-    img_paths = sorted(glob(img_path + '*.png'))
-    GT_paths = sorted(glob(GT_path + '*.png'))
-    assert len(img_paths) == len(GT_paths), 'Need GT for every Image.'
-    crop_imgs = np.concatenate([crop_augment(img_paths[i], GT_paths[i], dim, int(dim/2), num_class, filter)[0] for i in tqdm(range(len(img_paths)))])
-    crop_GTs = np.concatenate([crop_augment(img_paths[i], GT_paths[i], dim, int(dim/2), num_class, filter)[1] for i in tqdm(range(len(img_paths)))])
-    crop_imgs = torch.tensor(np.transpose(crop_imgs, axes=(0, 3, 1, 2)), dtype=torch.float)
-    crop_GTs = torch.tensor(np.transpose(crop_GTs, axes=(0, 3, 1, 2)), dtype=torch.float)
-    X_train, X_mem, y_train, y_mem = train_test_split(crop_imgs, crop_GTs, train_size=train_per)
-    X_valid, X_test, y_valid, y_test = train_test_split(X_mem, y_mem, test_size=0.33)
-    train_data = ImageSet(X_train, y_train)
-    valid_data = ImageSet(X_valid, y_valid)
-    test_data = ImageSet(X_test, y_test)
-    train_loader = data.DataLoader(train_data, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=num_cpu)
-    val_loader = data.DataLoader(valid_data, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=num_cpu)
-    test_loader = data.DataLoader(test_data, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=num_cpu)
-    return train_loader, val_loader, test_loader
+    def to_dataloader(self):
+        img_paths, GT_paths = self.load_imgs()[:2]
+        #Combine results from each image path into one array
+        crop_imgs = np.concatenate([self.crop_augment(img_paths[i], GT_paths[i])[0]
+                                    for i in tqdm(range(len(img_paths)))], axis=0)
+        crop_GTs = np.concatenate([self.crop_augment(img_paths[i], GT_paths[i])[1]
+                                   for i in tqdm(range(len(img_paths)))], axis=0)
+        #numpy array to torch tensor, move around columns for pytorch convolution
+        crop_imgs = np.transpose(crop_imgs, axes=(0, 3, 1, 2))
+        crop_GTs = np.transpose(crop_GTs, axes=(0, 3, 1, 2))
+        print(crop_imgs.shape, crop_GTs.shape)
+        #split into train and mem
+        X_train, X_mem, y_train, y_mem = train_test_split(crop_imgs, crop_GTs, train_size=self.train_per)
+        #split mem into valid and test
+        X_valid, X_test, y_valid, y_test = train_test_split(X_mem, y_mem, test_size=0.33)
+        train_data = ImageSet(X_train, y_train) #move to pytorch dataset
+        valid_data = ImageSet(X_valid, y_valid)
+        test_data = ImageSet(X_test, y_test)
+        #init pytorch dataloader
+        train_loader = data.DataLoader(train_data, batch_size=self.batch_size,
+                                       shuffle=True, drop_last=True, num_workers=self.num_cpu)
+        val_loader = data.DataLoader(valid_data, batch_size=self.batch_size,
+                                     shuffle=True, drop_last=True, num_workers=self.num_cpu)
+        test_loader = data.DataLoader(test_data, batch_size=self.batch_size,
+                                      shuffle=True, drop_last=True, num_workers=self.num_cpu)
+        return train_loader, val_loader, test_loader
+
+    def crop_recon(self, img):
+        img = np.array(cv2.imread(img, 1)) / 255.0 #load and scale img
+        imgs = view_as_windows(img, (self.dim, self.dim, 3), step=self.dim)
+        a, b, c, d, e, f = imgs.shape
+        imgs = imgs.reshape(a*b, self.dim, self.dim, 3)
+        imgs = np.transpose(imgs, axes=(0, 3, 1, 2))
+        return imgs, a, b
+
+    def eval_dataloader(self):
+        eval_paths = self.load_imgs()[2]
+        if self.eval_type == 'Windowed':
+            #path to crop_recon, concatenate results
+            window_imgs = np.concatenate([self.crop_recon(eval_paths[i])[0]
+                                          for i in range(len(eval_paths))], axis=0)
+            print(window_imgs.shape)
+            num_col, num_row = self.crop_recon(eval_paths[0])[1:]
+            eval_loader = data.DataLoader(ReconSet(window_imgs), batch_size=self.batch_size,
+                                          shuffle=False, drop_last=False, num_workers=self.num_cpu)
+            return eval_loader, num_col, num_row
+
+        elif self.eval_type == 'Scaled':
+            a, b = np.array(cv2.imread(eval_paths[0], 1)).shape
+            h = int(0.15 * a)
+            w = int(0.15 * b)
+            scale_dim = (w, h)
+            #Load img, scale pixels, resize img to 15%, to np array, transpose columns for torch convolution, concatenate together
+            scaled_imgs = np.concatenate([np.transpose(np.array(cv2.resize(cv2.imread(eval_paths[i], 1),
+                                                                scale_dim, interpolation=cv2.INTER_NEAREST),
+                                                                axes=(0, 3, 1, 2))) / 255.0
+                                         for i in range(len(eval_paths))], axis=0)
+            eval_loader = data.DataLoader(ReconSet(scaled_imgs), batch_size=4, #batch size of 4 because bigger than normal runs
+                                          shuffle=False, drop_last=False, num_workers=self.num_cpu)
+            return eval_loader
+
+        else:
+            print('Wrong eval type, try again.')
+            return None
+
 
