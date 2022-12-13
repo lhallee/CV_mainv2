@@ -83,6 +83,6 @@ def test_saver(path, feed_img, SR, GT, batch):
 
 def eval_saver(path, SR, im_num):
     #For saving evaluation results
-    plt.imshow(SR)
+    plt.imshow(SR[:,:,0])
     plt.show()
-    plt.imsave(path + 'eval' + str(im_num) + '_img.png', SR)
+    plt.imsave(path + 'eval' + str(im_num) + '_img.png', SR[:,:,0])
