@@ -57,7 +57,7 @@ class eval_solver:
         SRs = np.concatenate([self.unet(batch.to(self.device)).detach().cpu().numpy() for batch in loop])
         if self.eval_type == 'Windowed':
             for i in range(int(len(SRs)/(self.num_row * self.num_col))):
-                recon = self.window_recon(SRs[i])
+                recon = self.window_recon(SRs[i * self.num_row * self.num_col:(i+1) * self.num_row * self.num_col])
                 eval_saver(recon, i)
         elif self.eval_type == 'Scaled':
             for i in range(len(SRs)):
