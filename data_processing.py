@@ -156,7 +156,6 @@ class Imageset_processing:
         img = np.array(cv2.imread(img, 1)) / 255.0 #load and scale img
         imgs = view_as_windows(img, (self.dim, self.dim, 3), step=self.dim)
         a, b, c, d, e, f = imgs.shape
-        print(a, b)
         imgs = imgs.reshape(a*b, self.dim, self.dim, 3)
         imgs = np.transpose(imgs, axes=(0, 3, 1, 2))
         return imgs, a, b
@@ -174,9 +173,9 @@ class Imageset_processing:
 
         elif self.eval_type == 'Scaled':
             a, b, c = np.array(cv2.imread(eval_paths[0], 1)).shape
-            print(a, b, c)
-            h = int(0.15 * a)
-            w = int(0.15 * b)
+            alpha, beta = int(0.15 * a), int(0.15 * b)
+            h = int((alpha + beta) / 2)
+            w = h
             scale_dim = (w, h)
             scaled_imgs = np.concatenate([np.array(cv2.resize(cv2.imread(eval_paths[i], 1),
                                             scale_dim, interpolation=cv2.INTER_NEAREST)).reshape(1, h, w, c) / 255.0
