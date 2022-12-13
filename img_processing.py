@@ -3,7 +3,7 @@ import numpy as np
 from tqdm import tqdm
 from natsort import natsorted
 from glob import glob
-
+'''
 full_LN_path = './aligned_imgs/'
 save_path = './squared_aligned_ln_imgs/'
 LN_paths = natsorted(glob(full_LN_path + '*.tif'))
@@ -38,9 +38,12 @@ for i in tqdm(range(len(LN_paths))):
 	path = save_path + 'squared_' + LN_paths[i].split('\\')[1] + '.png'
 	new_img = cv2.copyMakeBorder(img, top, bottom, left, right, borderType=cv2.BORDER_CONSTANT, value=0)
 	cv2.imwrite(path, new_img)
+'''
 
-# border widths; I set them all to 150
-#top, bottom, left, right = [150]*4
-#img_with_border = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_REPLICATE)
-#cv2.imwrite(filename, img)
-#https://stackoverflow.com/questions/11142851/adding-borders-to-an-image-using-python
+img = cv2.imread('eval_img/section 5_z1c1+2+3.png', 1)
+tmp = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+_,alpha = cv2.threshold(tmp,0,255,cv2.THRESH_BINARY|cv2.THRESH_OTSU)
+b, g, r = cv2.split(img)
+rgba = [b,g,r, alpha]
+dst = cv2.merge(rgba,4)
+cv2.imwrite('test.png', dst)
