@@ -46,7 +46,7 @@ class eval_solver:
                 k += 1
         W, H = recon.shape
         x_col, y_col = np.array(range(W)), np.array(range(H))
-        x_high, y_high, = np.arange(0, W, 0.2), np.arange(0, H, 0.1)
+        x_high, y_high, = np.arange(0, W, 0.5), np.arange(0, H, 0.5)
         recon = recon > 0.5
         filt_img = filters.threshold_local(recon, 51)
         filt_set_func = scipy.interpolate.RectBivariateSpline(x_col, y_col, filt_img)
