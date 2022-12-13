@@ -76,6 +76,6 @@ def test_saver(path, feed_img, SR, GT, batch):
     SR = np.transpose(np.array(SR), axes=(0, 2, 3, 1))
     GT = np.transpose(np.array(GT), axes=(0, 2, 3, 1))
     feed_img = np.transpose(np.array(feed_img), axes=(0, 2, 3, 1))
-    for i in range(len(SRs)):
+    for i in range(len(SR)):
         save = np.hstack((np.mean(feed_img[i], -1).reshape(len(SR[0]), len(SR[0])), SR[i][:, :, 0], GT[i][:, :, 0]))
         plt.imsave(path + str(batch) + '_' + '_test_img.png', save)
