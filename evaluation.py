@@ -1,6 +1,8 @@
 import os
 import numpy as np
 import torch
+import scipy.interpolate
+import skimage
 from plots import eval_saver
 from tqdm import tqdm
 from models import U_Net, R2U_Net, AttU_Net, R2AttU_Net
@@ -43,8 +45,14 @@ class eval_solver:
             for j in range(self.num_row):
                 recon[i * self.dim:(i + 1) * self.dim, j * self.dim:(j + 1) * self.dim] = SR[k][:,:,0]
                 k += 1
-        recon = recon.reshape(self.num_col * self.dim, self.num_row * self.dim, 1)
-        return recon
+        H, W = recon.shape
+        x_col, y_col = np.array(range(W)), np.array(range(H))
+        x_high, y_high, = np.arange(0, W, 0.2), np.arange(0, H, 0.1)
+        recon = recon > 0.5
+        filt_img = skimage.filters.threshold_local(recon, 51)
+        filt_set_func = scipy.interpolate.RectBivariateSpline(x_col, y_col, filt_img)
+        filt_func_img = filt_set_func(x_high, y_high)
+        return filt_func_img
 
     @torch.no_grad()  # don't update weights while evaluating
     def eval(self):
@@ -60,9 +68,8 @@ class eval_solver:
         if self.eval_type == 'Windowed':
             for i in range(int(len(SRs)/(self.num_row * self.num_col))):
                 single_SR = SRs[i * self.num_row * self.num_col:(i+1) * self.num_row * self.num_col]
-                print(single_SR.shape)
                 recon = self.window_recon(single_SR)
-                eval_saver(self.result_path, recon, i)
+                eval_saver(self.result_path, recon, i, self.eval_type)
         elif self.eval_type == 'Scaled':
             for i in range(len(SRs)):
-                eval_saver(self.result_path, SRs[i], i)
+                eval_saver(self.result_path, SRs[i][:,:,0], i, self.eval_type)

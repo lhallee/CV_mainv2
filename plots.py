@@ -81,8 +81,10 @@ def test_saver(path, feed_img, SR, GT, batch):
         save = np.hstack((np.mean(feed_img[i], -1).reshape(len(SR[0]), len(SR[0])), SR[i][:, :, 0], GT[i][:, :, 0]))
         plt.imsave(path + str(batch) + '_' + '_test_img.png', save)
 
-def eval_saver(path, SR, im_num):
+def eval_saver(path, SR, im_num, eval_type):
     #For saving evaluation results
-    plt.imshow(SR[:,:,0])
+    levels = np.linspace(0.0, 1.0, 21)
+    plt.contourf(SR, levels=levels, cmap=plt.cm.coolwarm)
+    plt.colorbar()
     plt.show()
-    plt.imsave(path + 'eval' + str(im_num) + '_img.png', SR[:,:,0])
+    plt.imsave(path + 'eval' + eval_type + str(im_num) + '_img.png', SR)
