@@ -90,6 +90,7 @@ def run_from_main():
     parser.add_argument('--train_per', type=float, default=0.7, help='Percentage of training data in dataloaders')
     parser.add_argument('--data_type', type=str, default='Real', help='Real or Mock data')
     parser.add_argument('--progress', type=bool, default=True, help='Save images over time or not')
+    parser.add_argument('--eval_type', type=str, default='Windowed', help='Type of evaluation. Windowed or Scaled')
     config = parser.parse_args(args=[])
     main(config)
 
