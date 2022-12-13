@@ -5,7 +5,7 @@ from skimage import filters
 from plots import eval_saver
 from tqdm import tqdm
 from models import U_Net, R2U_Net, AttU_Net, R2AttU_Net
-
+from matplotlib import pyplot as plt
 
 
 class eval_solver:
@@ -47,8 +47,14 @@ class eval_solver:
         W, H = recon.shape
         x_col, y_col = np.array(range(W)), np.array(range(H))
         x_high, y_high, = np.arange(0, W, 0.5), np.arange(0, H, 0.5)
+        plt.imshow(recon)
+        plt.show()
         recon = recon > 0.5
-        filt_img = filters.threshold_local(recon, 51)
+        plt.imshow(recon)
+        plt.show()
+        filt_img = filters.threshold_local(recon, 101)
+        plt.imshow(filt_img)
+        plt.show()
         filt_set_func = scipy.interpolate.RectBivariateSpline(x_col, y_col, filt_img)
         filt_func_img = filt_set_func(x_high, y_high)
         return filt_func_img
