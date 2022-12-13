@@ -10,6 +10,7 @@ from models import U_Net, R2U_Net, AttU_Net, R2AttU_Net
 class eval_solver:
     def __init__(self, config, eval_loader, num_col=0, num_row=0):
         self.eval_loader = eval_loader
+        self.eval_type = config.eval_type
         self.num_col = num_col
         self.num_row = num_row
         self.model_type = config.model_type
@@ -46,6 +47,6 @@ class eval_solver:
         SRs = np.concatenate([self.unet(batch.to(self.device)).detach().cpu().numpy() for batch in loop])
         if self.eval_type == 'Windowed':
             print(SRs.shape)
-            assert len(SRs) % self.num_col * self.num_row, 'Check SRs is sum of images, not sum of batches'
+            assert len(SRs) % (self.num_col * self.num_row), 'Check SRs is sum of images, not sum of batches'
         elif self.eval_type == 'Scaled':
             pass
