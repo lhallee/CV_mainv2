@@ -22,6 +22,7 @@ class eval_solver:
         self.result_path = config.result_path
         self.batch_size = config.batch_size
         self.dim = config.image_size
+        self.result_path = config.result_path
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     def build_model(self):
@@ -58,7 +59,7 @@ class eval_solver:
         if self.eval_type == 'Windowed':
             for i in range(int(len(SRs)/(self.num_row * self.num_col))):
                 recon = self.window_recon(SRs[i * self.num_row * self.num_col:(i+1) * self.num_row * self.num_col])
-                eval_saver(recon, i)
+                eval_saver(self.result_path, recon, i)
         elif self.eval_type == 'Scaled':
             for i in range(len(SRs)):
-                eval_saver(SRs[i], i)
+                eval_saver(self.result_path, SRs[i], i)

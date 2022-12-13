@@ -85,4 +85,4 @@ def eval_saver(path, SR, im_num):
     #For saving evaluation results
     plt.imshow(SR)
     plt.show()
-    plt.imsave(path + 'eval' + str(im_num) + '_eval_img.png', SR)
+    plt.imsave(path + 'eval' + str(im_num) + '_img.png', SR)
