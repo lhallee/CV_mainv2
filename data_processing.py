@@ -8,6 +8,7 @@ from torch.utils import data
 from skimage.util import view_as_windows
 from tqdm import tqdm
 from glob import glob
+from scipy.ndimage import rotate
 from sklearn.model_selection import train_test_split
 '''
 def to_categorical(y, num_classes=None, dtype="float32"):
@@ -101,27 +102,43 @@ class Imageset_processing:
         imgs_vflip = np.copy(imgs)
         imgs_hflip = np.copy(imgs)
         #reshape for torch augmentation
-        imgs_jitter = torch.tensor(np.transpose(np.copy(imgs), axes=(0, 3, 1, 2)), dtype=torch.float32)
+        imgs_jitter_1 = torch.tensor(np.transpose(np.copy(imgs), axes=(0, 3, 1, 2)), dtype=torch.float32)
+        imgs_jitter_2 = torch.tensor(np.transpose(np.copy(imgs), axes=(0, 3, 1, 2)), dtype=torch.float32)
+        imgs_jitter_3 = torch.tensor(np.transpose(np.copy(imgs), axes=(0, 3, 1, 2)), dtype=torch.float32)
         GTs_90 = np.copy(GTs)
         GTs_vflip = np.copy(GTs)
         GTs_hflip = np.copy(GTs)
-        GTs_jitter = np.copy(GTs)
+        GTs_jitter_1 = np.copy(GTs)
+        GTs_jitter_2 = np.copy(GTs)
+        GTs_jitter_3 = np.copy(GTs)
         for i in range(len(imgs)):
             imgs_90[i] = np.rot90(imgs_90[i])
             imgs_vflip[i] = np.flipud(imgs_vflip[i])
             imgs_hflip[i] = np.fliplr(imgs_hflip[i])
             #perform various jitter augmentations with a new probability each time
-            transform = torchvision.transforms.ColorJitter(np.random.uniform(0.0, 0.4),
-                                                           np.random.uniform(0.0, 0.4),
-                                                           np.random.uniform(0.0, 0.4),
-                                                           np.random.uniform(0.0, 0.4))
-            imgs_jitter[i] = transform(imgs_jitter[i])
+            transform_1 = torchvision.transforms.ColorJitter(np.random.uniform(0.0, 0.5),
+                                                           np.random.uniform(0.0, 0.5),
+                                                           np.random.uniform(0.0, 0.5),
+                                                           np.random.uniform(0.0, 0.5))
+            transform_2 = torchvision.transforms.ColorJitter(np.random.uniform(0.0, 0.5),
+                                                           np.random.uniform(0.0, 0.5),
+                                                           np.random.uniform(0.0, 0.5),
+                                                           np.random.uniform(0.0, 0.5))
+            transform_3 = torchvision.transforms.ColorJitter(np.random.uniform(0.0, 0.5),
+                                                           np.random.uniform(0.0, 0.5),
+                                                           np.random.uniform(0.0, 0.5),
+                                                           np.random.uniform(0.0, 0.5))
+            imgs_jitter_1[i] = transform_1(imgs_jitter_1[i])
+            imgs_jitter_2[i] = transform_2(imgs_jitter_1[i])
+            imgs_jitter_3[i] = transform_3(imgs_jitter_1[i])
             GTs_90[i] = np.rot90(GTs_90[i])
             GTs_vflip[i] = np.flipud(GTs_vflip[i])
             GTs_hflip[i] = np.fliplr(GTs_hflip[i])
-        imgs_jitter = np.transpose(np.array(imgs_jitter), axes=(0, 2, 3, 1)) #reshape back to normal
-        final_crops = np.concatenate((imgs, imgs_90, imgs_vflip, imgs_hflip, imgs_jitter)) #combine all together
-        final_crops_GT = np.concatenate((GTs, GTs_90, GTs_vflip, GTs_hflip, GTs_jitter))
+        imgs_jitter_1 = np.transpose(np.array(imgs_jitter_1), axes=(0, 2, 3, 1)) #reshape back to normal
+        imgs_jitter_2 = np.transpose(np.array(imgs_jitter_2), axes=(0, 2, 3, 1))  # reshape back to normal
+        imgs_jitter_3 = np.transpose(np.array(imgs_jitter_3), axes=(0, 2, 3, 1))  # reshape back to normal
+        final_crops = np.concatenate((imgs, imgs_90, imgs_vflip, imgs_hflip, imgs_jitter_1, imgs_jitter_2, imgs_jitter_3)) #combine all together
+        final_crops_GT = np.concatenate((GTs, GTs_90, GTs_vflip, GTs_hflip, GTs_jitter_1, GTs_jitter_2, GTs_jitter_3))
         return final_crops, final_crops_GT
 
     def to_dataloader(self):

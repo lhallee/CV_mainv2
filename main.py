@@ -30,7 +30,7 @@ def main(config):
     data_setup = Imageset_processing(config)
     if config.mode == 'eval':
         eval_loader, num_col, num_row = data_setup.eval_dataloader()
-        vis_imgs = eval_loader.dataset[:1]
+        vis_imgs = eval_loader.dataset[:5]
         preview_crops_eval(vis_imgs)
         solver = eval_solver(config, eval_loader, num_col, num_row)
         solver.eval()
@@ -38,7 +38,7 @@ def main(config):
     elif config.data_type == 'Real':
         train_loader, valid_loader, test_loader = data_setup.to_dataloader()
         print(len(train_loader), len(valid_loader), len(test_loader))
-        vis_imgs, vis_GTs = train_loader.dataset[:10]
+        vis_imgs, vis_GTs = train_loader.dataset[:50]
         preview_crops(vis_imgs, vis_GTs, config.num_class)
         solver = Solver(config, train_loader, valid_loader, test_loader)
     elif config.data_type == 'Mock':
@@ -97,7 +97,7 @@ def run_from_main():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # model hyper-parameters
-    parser.add_argument('--image_size', type=int, default=128)
+    parser.add_argument('--image_size', type=int, default=256)
     parser.add_argument('--t', type=int, default=3, help='t for Recurrent step of R2U_Net or R2AttU_Net')
     parser.add_argument('--num_class', type=int, default=2, help='Number of classes for segmentation')
 
@@ -112,7 +112,7 @@ if __name__ == '__main__':
     parser.add_argument('--loss', type=str, default='DiceBCE', help='BCE, DiceBCE, IOU, CE')
 
     # misc
-    parser.add_argument('--mode', type=str, default='eval', help='train, test, or eval')
+    parser.add_argument('--mode', type=str, default='train', help='train, test, or eval')
     parser.add_argument('--model_type', type=str, default='R2AttU_Net', help='U_Net/R2U_Net/AttU_Net/R2AttU_Net')
     parser.add_argument('--result_path', type=str, default='./result/')
     parser.add_argument('--model_path', type=str, default='./saved_models/')
