@@ -56,7 +56,7 @@ class eval_solver:
         loop = tqdm(self.eval_loader, leave=True)
         SRs = np.concatenate([self.unet(batch.to(self.device)).detach().cpu().numpy() for batch in loop])
         if self.eval_type == 'Windowed':
-            for i in range(int(SRs/(self.num_row * self.num_col))):
+            for i in range(int(len(SRs)/(self.num_row * self.num_col))):
                 recon = self.window_recon(SRs[i])
                 eval_saver(recon, i)
         elif self.eval_type == 'Scaled':

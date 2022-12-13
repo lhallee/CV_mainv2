@@ -167,9 +167,7 @@ class Imageset_processing:
             #path to crop_recon, concatenate results
             window_imgs = np.concatenate([self.crop_recon(eval_paths[i])[0]
                                           for i in range(len(eval_paths))], axis=0)
-            print(window_imgs.shape)
             num_col, num_row = self.crop_recon(eval_paths[0])[1:]
-            print(num_col, num_row)
             eval_loader = data.DataLoader(ReconSet(window_imgs), batch_size=self.batch_size,
                                           shuffle=False, drop_last=False, num_workers=self.num_cpu)
             return eval_loader, num_col, num_row
