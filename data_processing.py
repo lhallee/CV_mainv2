@@ -156,35 +156,36 @@ class Imageset_processing:
         img = np.array(cv2.imread(img, 1)) / 255.0 #load and scale img
         imgs = view_as_windows(img, (self.dim, self.dim, 3), step=self.dim)
         a, b, c, d, e, f = imgs.shape
+        print(a, b)
         imgs = imgs.reshape(a*b, self.dim, self.dim, 3)
         imgs = np.transpose(imgs, axes=(0, 3, 1, 2))
         return imgs, a, b
 
     def eval_dataloader(self):
         eval_paths = self.load_imgs()[2]
-        print(eval_paths, len(eval_paths))
         if self.eval_type == 'Windowed':
             #path to crop_recon, concatenate results
             window_imgs = np.concatenate([self.crop_recon(eval_paths[i])[0]
-                                          for i in range(len(eval_paths))], axis=0)
+                                          for i in range(len(eval_paths))])
             num_col, num_row = self.crop_recon(eval_paths[0])[1:]
             eval_loader = data.DataLoader(ReconSet(window_imgs), batch_size=self.batch_size,
                                           shuffle=False, drop_last=False, num_workers=self.num_cpu)
             return eval_loader, num_col, num_row
 
         elif self.eval_type == 'Scaled':
-            a, b = np.array(cv2.imread(eval_paths[0], 1)).shape
+            a, b, c = np.array(cv2.imread(eval_paths[0], 1)).shape
+            print(a, b, c)
             h = int(0.15 * a)
             w = int(0.15 * b)
             scale_dim = (w, h)
-            #Load img, scale pixels, resize img to 15%, to np array, transpose columns for torch convolution, concatenate together
-            scaled_imgs = np.concatenate([np.transpose(np.array(cv2.resize(cv2.imread(eval_paths[i], 1),
-                                                                scale_dim, interpolation=cv2.INTER_NEAREST),
-                                                                axes=(0, 3, 1, 2))) / 255.0
-                                         for i in range(len(eval_paths))], axis=0)
+            scaled_imgs = np.concatenate([np.array(cv2.resize(cv2.imread(eval_paths[i], 1),
+                                            scale_dim, interpolation=cv2.INTER_NEAREST)).reshape(1, h, w, c) / 255.0
+                                            for i in range(len(eval_paths))])
+            scaled_imgs = np.transpose(scaled_imgs, axes=(0, 3, 1, 2))
+            print(scaled_imgs.shape)
             eval_loader = data.DataLoader(ReconSet(scaled_imgs), batch_size=1, #smaller batch size because bigger than normal runs
                                           shuffle=False, drop_last=False, num_workers=self.num_cpu)
-            return eval_loader
+            return eval_loader, None, None
 
         else:
             print('Wrong eval type, try again.')

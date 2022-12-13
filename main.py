@@ -30,7 +30,7 @@ def main(config):
     data_setup = Imageset_processing(config)
     if config.mode == 'eval':
         eval_loader, num_col, num_row = data_setup.eval_dataloader()
-        vis_imgs = eval_loader.dataset[:2]
+        vis_imgs = eval_loader.dataset[:1]
         preview_crops_eval(vis_imgs)
         solver = eval_solver(config, eval_loader, num_col, num_row)
         solver.eval()
