@@ -174,8 +174,8 @@ class Imageset_processing:
         elif self.eval_type == 'Scaled':
             a, b, c = np.array(cv2.imread(eval_paths[0], 1)).shape
             alpha, beta = int(0.15 * a), int(0.15 * b)
-            h = int((alpha + beta) / 2)
-            w = h
+            h = 1024
+            w = 1024
             scale_dim = (w, h)
             scaled_imgs = np.concatenate([np.array(cv2.resize(cv2.imread(eval_paths[i], 1),
                                             scale_dim, interpolation=cv2.INTER_NEAREST)).reshape(1, h, w, c) / 255.0

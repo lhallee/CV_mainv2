@@ -56,12 +56,11 @@ class eval_solver:
             self.unet.load_state_dict(torch.load(input_path, map_location=self.device))  # load pretrained weights
         loop = tqdm(self.eval_loader, leave=True)
         SRs = np.concatenate([self.unet(batch.to(self.device)).detach().cpu().numpy() for batch in loop])
-        print(SRs.shape)
         SRs = np.transpose(SRs, axes=(0, 2, 3, 1))
-        print(SRs.shape)
         if self.eval_type == 'Windowed':
-            for i in range(len(SRs)):
-                single_SR = SRs[i]
+            for i in range(int(len(SRs)/(self.num_row * self.num_col))):
+                single_SR = SRs[i * self.num_row * self.num_col:(i+1) * self.num_row * self.num_col]
+                print(single_SR.shape)
                 recon = self.window_recon(single_SR)
                 eval_saver(self.result_path, recon, i)
         elif self.eval_type == 'Scaled':
