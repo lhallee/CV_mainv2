@@ -126,6 +126,8 @@ class Imageset_processing:
 
     def to_dataloader(self):
         img_paths, GT_paths = self.load_imgs()[:2]
+        #img_paths = img_paths[:1]
+        #GT_paths = GT_paths[:1]
         #Combine results from each image path into one array
         crop_imgs = np.concatenate([self.crop_augment(img_paths[i], GT_paths[i])[0]
                                     for i in tqdm(range(len(img_paths)))], axis=0)

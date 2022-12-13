@@ -37,7 +37,11 @@ class eval_solver:
     @torch.no_grad()  # don't update weights while evaluating
     def eval(self):
         self.build_model()  # rebuild model
-        self.unet.load_state_dict(torch.load(self.model_path))  # load pretrained weights
+        try:
+            self.unet.load_state_dict(torch.load(self.model_path, map_location=self.device))  # load pretrained weights
+        except:
+            input_path = input('Please type the path to the desired saved weights: ')
+            self.unet.load_state_dict(torch.load(input_path, map_location=self.device))  # load pretrained weights
         loop = tqdm(self.eval_loader, leave=True)
         SRs = np.concatenate([self.unet(batch.to(self.device)).detach().cpu().numpy() for batch in loop])
         if self.eval_type == 'Windowed':
