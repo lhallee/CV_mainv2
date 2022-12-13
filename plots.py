@@ -37,6 +37,7 @@ def preview_crops_eval(imgs):
     imgs = np.transpose(np.array(imgs), axes=(0, 2, 3, 1))
     for i in range(len(imgs)):
         plt.imshow(imgs[i])
+        plt.show()
 
 def checker(path, feed_img, SR, GT, epoch, batch, num_class=2):
     #For checking training progress mid training
@@ -79,3 +80,9 @@ def test_saver(path, feed_img, SR, GT, batch):
     for i in range(len(SR)):
         save = np.hstack((np.mean(feed_img[i], -1).reshape(len(SR[0]), len(SR[0])), SR[i][:, :, 0], GT[i][:, :, 0]))
         plt.imsave(path + str(batch) + '_' + '_test_img.png', save)
+
+def eval_saver(path, SR, im_num):
+    #For saving evaluation results
+    plt.imshow(SR)
+    plt.show()
+    plt.imsave(path + 'eval' + str(im_num) + '_eval_img.png', SR)

@@ -1,9 +1,9 @@
 import os
 import numpy as np
 import torch
+from plots import eval_saver
 from tqdm import tqdm
 from models import U_Net, R2U_Net, AttU_Net, R2AttU_Net
-
 
 
 
@@ -35,6 +35,16 @@ class eval_solver:
             self.unet = R2AttU_Net(img_ch=self.img_ch, output_ch=self.output_ch, t=self.t)
         self.unet.to(self.device)
 
+    def window_recon(self, SR):
+        recon = np.zeros((self.num_col * self.dim, self.num_row * self.dim))
+        k = 0
+        for i in range(self.num_col):
+            for j in range(self.num_row):
+                recon[i * self.dim:(i + 1) * self.dim, j * self.dim:(j + 1) * self.dim] = SR[k][:,:,0]
+                k += 1
+        recon = recon.reshape(self.num_col * self.dim, self.num_row * self.dim, 1)
+        return recon
+
     @torch.no_grad()  # don't update weights while evaluating
     def eval(self):
         self.build_model()  # rebuild model
@@ -46,7 +56,9 @@ class eval_solver:
         loop = tqdm(self.eval_loader, leave=True)
         SRs = np.concatenate([self.unet(batch.to(self.device)).detach().cpu().numpy() for batch in loop])
         if self.eval_type == 'Windowed':
-            print(SRs.shape)
-            assert len(SRs) % (self.num_col * self.num_row), 'Check SRs is sum of images, not sum of batches'
+            for i in range(int(SRs/(self.num_row * self.num_col))):
+                recon = self.window_recon(SRs[i])
+                eval_saver(recon, i)
         elif self.eval_type == 'Scaled':
-            pass
+            for i in range(len(SRs)):
+                eval_saver(SRs[i], i)

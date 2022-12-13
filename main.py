@@ -30,7 +30,7 @@ def main(config):
     data_setup = Imageset_processing(config)
     if config.mode == 'eval':
         eval_loader, num_col, num_row = data_setup.eval_dataloader()
-        vis_imgs = eval_loader.dataset[:10]
+        vis_imgs = eval_loader.dataset[:2]
         preview_crops_eval(vis_imgs)
         solver = eval_solver(config, eval_loader, num_col, num_row)
         solver.eval()
@@ -70,8 +70,8 @@ def run_from_main():
 
     # training hyper-parameters
     parser.add_argument('--img_ch', type=int, default=3)
-    parser.add_argument('--num_epochs', type=int, default=100)
-    parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--num_epochs', type=int, default=10)
+    parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--lr', type=float, default=0.003)
     parser.add_argument('--beta1', type=float, default=0.5)  # momentum1 in Adam
     parser.add_argument('--beta2', type=float, default=0.999)  # momentum2 in Adam
@@ -79,7 +79,7 @@ def run_from_main():
     parser.add_argument('--loss', type=str, default='DiceBCE', help='BCE, DiceBCE, IOU, CE')
 
     # misc
-    parser.add_argument('--mode', type=str, default='train')
+    parser.add_argument('--mode', type=str, default='eval')
     parser.add_argument('--model_type', type=str, default='R2AttU_Net', help='U_Net/R2U_Net/AttU_Net/R2AttU_Net')
     parser.add_argument('--result_path', type=str, default='./result/')
     parser.add_argument('--model_path', type=str, default='./saved_models/')
