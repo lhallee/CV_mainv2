@@ -182,7 +182,7 @@ class Imageset_processing:
         if self.eval_type == 'Windowed':
             #path to crop_recon, concatenate results
             window_imgs = np.concatenate([self.crop_recon(eval_paths[i])[0]
-                                          for i in range(len(eval_paths))])
+                                          for i in tqdm(range(len(eval_paths)), desc='Crop Images')])
             num_col, num_row = self.crop_recon(eval_paths[0])[1:]
             eval_loader = data.DataLoader(ReconSet(window_imgs), batch_size=self.batch_size,
                                           shuffle=False, drop_last=False, num_workers=self.num_cpu)
