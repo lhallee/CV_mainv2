@@ -48,8 +48,8 @@ class eval_solver:
         super_ratio = input('Super Pixel Ratio: ')
         filter_radius = input('Filter radius: ')
         x_col, y_col = np.array(range(W)), np.array(range(H))
-        x_high, y_high, = np.arange(0, W, 0.5), np.arange(0, H, 0.5)
-        filt_img = filters.threshold_local(recon, 21)
+        x_high, y_high, = np.arange(0, W, super_ratio), np.arange(0, H, super_ratio)
+        filt_img = filters.threshold_local(recon, filter_radius)
         filt_set_func = scipy.interpolate.RectBivariateSpline(x_col, y_col, filt_img)
         filt_func_img = filt_set_func(x_high, y_high)
         return filt_func_img
