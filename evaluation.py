@@ -37,7 +37,7 @@ class eval_solver:
             self.unet = R2AttU_Net(img_ch=self.img_ch, output_ch=self.output_ch, t=self.t)
         self.unet.to(self.device)
 
-    def window_recon(self, SR):
+    def window_recon(self, SR, super_ratio, filter_radius, thresh_ratio):
         recon = np.zeros((self.num_col * self.dim, self.num_row * self.dim))
         k = 0
         for i in range(self.num_col):
@@ -45,9 +45,7 @@ class eval_solver:
                 recon[i * self.dim:(i + 1) * self.dim, j * self.dim:(j + 1) * self.dim] = SR[k][:,:,0]
                 k += 1
         W, H = recon.shape
-        super_ratio = float(input('Super Pixel Ratio: '))
-        filter_radius = int(input('Filter radius: '))
-        thresh_ratio = float(input('Threshold Ratio: '))
+        
         x_col, y_col = np.array(range(W)), np.array(range(H))
         x_high, y_high, = np.arange(0, W, super_ratio), np.arange(0, H, super_ratio)
         filt_img = filters.threshold_local(recon, filter_radius)
@@ -69,10 +67,13 @@ class eval_solver:
         SRs = np.concatenate([self.unet(batch.to(self.device)).detach().cpu().numpy() for batch in loop])
         SRs = np.transpose(SRs, axes=(0, 2, 3, 1))
         if self.eval_type == 'Windowed':
+            super_ratio = float(input('Super Pixel Ratio: '))
+            filter_radius = int(input('Filter radius: '))
+            thresh_ratio = float(input('Threshold Ratio: '))
             for i in range(int(len(SRs)/(self.num_row * self.num_col))):
                 single_SR = SRs[i * self.num_row * self.num_col:(i+1) * self.num_row * self.num_col]
-                recon = self.window_recon(single_SR)
-                eval_saver(self.result_path, recon, i, self.eval_type)
+                recon = self.window_recon(single_SR, super_ratio, filter_radius, thresh_ratio)
+                plt.imsave(self.result_path + 'eval' + eval_type + str(i) + '_img.png', recon)
         elif self.eval_type == 'Scaled':
             for i in range(len(SRs)):
                 eval_saver(self.result_path, SRs[i][:,:,0], i, self.eval_type)
