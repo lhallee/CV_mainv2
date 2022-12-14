@@ -73,7 +73,7 @@ class eval_solver:
             for i in range(int(len(SRs)/(self.num_row * self.num_col))):
                 single_SR = SRs[i * self.num_row * self.num_col:(i+1) * self.num_row * self.num_col]
                 recon = self.window_recon(single_SR, super_ratio, filter_radius, thresh_ratio)
-                plt.imsave(self.result_path + 'eval' + eval_type + str(i) + '_img.png', recon)
+                plt.imsave(self.result_path + 'eval' + self.eval_type + str(i) + '_img.png', recon)
         elif self.eval_type == 'Scaled':
             for i in range(len(SRs)):
                 eval_saver(self.result_path, SRs[i][:,:,0], i, self.eval_type)
