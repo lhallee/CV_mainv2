@@ -50,6 +50,8 @@ class eval_solver:
         x_col, y_col = np.array(range(W)), np.array(range(H))
         x_high, y_high, = np.arange(0, W, super_ratio), np.arange(0, H, super_ratio)
         filt_img = filters.threshold_local(recon, filter_radius)
+        filt_img[filt_img < 0.5] = 0.0
+        filt_img[filt_img >= 0.5] = 1.0
         filt_set_func = scipy.interpolate.RectBivariateSpline(x_col, y_col, filt_img)
         filt_func_img = filt_set_func(x_high, y_high)
         return filt_func_img
