@@ -70,7 +70,7 @@ class eval_solver:
             super_ratio = float(input('Super Pixel Ratio: '))
             filter_radius = int(input('Filter radius: '))
             thresh_ratio = float(input('Threshold Ratio: '))
-            for i in range(int(len(SRs)/(self.num_row * self.num_col))):
+            for i in tqdm(range(int(len(SRs)/(self.num_row * self.num_col))), desc='Evaluation'):
                 single_SR = SRs[i * self.num_row * self.num_col:(i+1) * self.num_row * self.num_col]
                 recon = self.window_recon(single_SR, super_ratio, filter_radius, thresh_ratio)
                 plt.imsave(self.result_path + 'eval' + self.eval_type + str(i) + '_img.png', recon)
