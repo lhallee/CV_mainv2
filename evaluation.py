@@ -45,6 +45,8 @@ class eval_solver:
                 recon[i * self.dim:(i + 1) * self.dim, j * self.dim:(j + 1) * self.dim] = SR[k][:,:,0]
                 k += 1
         W, H = recon.shape
+        super_ratio = input('Super Pixel Ratio: ')
+        filter_radius = input('Filter radius: ')
         x_col, y_col = np.array(range(W)), np.array(range(H))
         x_high, y_high, = np.arange(0, W, 0.5), np.arange(0, H, 0.5)
         filt_img = filters.threshold_local(recon, 21)
