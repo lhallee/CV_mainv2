@@ -42,7 +42,6 @@ class Solver(object):
         self.result_path = config.result_path
         #MISC
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.build_model()
         self.unet_path = self.model_path + self.model_type + self.data_type + self.loss + str(self.num_epochs) + str(
             self.lr) + '.pkl' #descriptive name from settings
         self.progress = config.progress
@@ -85,6 +84,9 @@ class Solver(object):
         print("The number of parameters: {}".format(num_params))
 
     def train(self):
+        self.build_model()
+        if self.model_path is not None:
+            self.unet.load_state_dict(torch.load(self.model_path, map_location=self.device))
         epoch = 0
         #Unet score is the average of our metrics calculated from validation
         while epoch < self.num_epochs and self.best_unet_score < 0.95:
