@@ -72,16 +72,20 @@ class training_processing:
         self.batch_size = config.batch_size
         self.num_cpu = os.cpu_count()
 
-    def crop_augment(self, img, GT):
-        img = np.array(cv2.imread(img, 1)) / 255.0 #read and scale img
-        GT = np.array(cv2.imread(GT, 2), dtype=np.float32)
-        a, b = GT.shape
-        GT = GT.reshape(a, b, 1) #reshape for view_as_windows
+    def crop_augment(self, img, GT=None, hev=None, lob=None):
+        if self.num_class > 1:
+            img = np.array(cv2.imread(img, 1)) / 255.0  # read and scale img
+            hev = np.array(cv2.imread(hev, 2), dtype=np.float32).reshape(img.shape[0], img.shape[1], 1)
+            lob = np.array(cv2.imread(lob, 2), dtype=np.float32).reshape(img.shape[0], img.shape[1], 1)
+            GT = np.concatenate((lob, hev), axis=2)
+        else:
+            img = np.array(cv2.imread(img, 1)) / 255.0 #read and scale img
+            GT = np.array(cv2.imread(GT, 2), dtype=np.float32).reshape(img.shape[0], img.shape[1], 1)
         imgs = view_as_windows(img, (self.dim, self.dim, 3), step=self.dim)
-        GTs = view_as_windows(GT, (self.dim, self.dim, 1), step=self.dim)
+        GTs = view_as_windows(GT, (self.dim, self.dim, self.num_class), step=self.dim)
         a, b, c, d, e, f = imgs.shape
         imgs = imgs.reshape(a * b, self.dim, self.dim, 3) #reshape windowed output into num_images, dim, dim channel
-        GTs = GTs.reshape(a * b, self.dim, self.dim, 1)
+        GTs = GTs.reshape(a * b, self.dim, self.dim, self.num_class)
         GTs[GTs < 1] = 0
         GTs[GTs > 0] = 1
         imgs_90 = np.copy(imgs) #copy images for various augmentations
@@ -134,9 +138,9 @@ class training_processing:
         GT_paths = natsorted(glob(self.GT_path + '*.png'))
         assert len(img_paths) == len(GT_paths), 'Need GT for every Image.'
         #Combine results from each image path into one array
-        crop_imgs = np.concatenate([self.crop_augment(img_paths[i], GT_paths[i])[0]
+        crop_imgs = np.concatenate([self.crop_augment(img=img_paths[i], GT=GT_paths[i])[0]
                                     for i in tqdm(range(len(img_paths)))], axis=0)
-        crop_GTs = np.concatenate([self.crop_augment(img_paths[i], GT_paths[i])[1]
+        crop_GTs = np.concatenate([self.crop_augment(img=img_paths[i], GT=GT_paths[i])[1]
                                    for i in tqdm(range(len(img_paths)))], axis=0)
         #numpy array to torch tensor, move around columns for pytorch convolution
         crop_imgs = np.transpose(crop_imgs, axes=(0, 3, 1, 2))
@@ -167,14 +171,11 @@ class training_processing:
         #hev_paths = hev_paths[:1]
         #lob_paths = lob_paths[:1]
         #Combine results from each image path into one array
-        crop_imgs = np.concatenate([self.crop_augment(img_paths[i], hev_paths[i])[0]
+        crop_imgs = np.concatenate([self.crop_augment(img=img_paths[i], hev=hev_paths[i], lob=lob_paths[i])[0]
                                     for i in tqdm(range(len(img_paths)))], axis=0)
-        crop_hevs = np.concatenate([self.crop_augment(img_paths[i], hev_paths[i])[1]
+        crop_GTs = np.concatenate([self.crop_augment(img=img_paths[i], hev=hev_paths[i], lob=lob_paths[i])[1]
                                    for i in tqdm(range(len(img_paths)))], axis=0)
-        crop_lobs = np.concatenate([self.crop_augment(img_paths[i], lob_paths[i])[1]
-                                    for i in tqdm(range(len(img_paths)))], axis=0)
         #numpy array to torch tensor, move around columns for pytorch convolution
-        crop_GTs = np.concatenate((crop_lobs, crop_hevs), axis=3)
         crop_imgs = np.transpose(crop_imgs, axes=(0, 3, 1, 2))
         crop_GTs = np.transpose(crop_GTs, axes=(0, 3, 1, 2))
         #split into train and mem
