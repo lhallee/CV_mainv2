@@ -58,7 +58,7 @@ class eval_solver:
 
     @torch.no_grad()  # don't update weights while evaluating
     def eval(self):
-        now = datetime.now()
+        now = str(datetime.now())
         self.build_model()  # rebuild model
         try:
             self.unet.load_state_dict(torch.load(self.model_path, map_location=self.device))  # load pretrained weights
@@ -69,9 +69,12 @@ class eval_solver:
         SRs = np.concatenate([self.unet(batch.to(self.device)).detach().cpu().numpy() for batch in loop])
         SRs = np.transpose(SRs, axes=(0, 2, 3, 1))
         if self.eval_type == 'Windowed':
-            super_ratio = float(input('Super Pixel Ratio: '))
-            filter_radius = int(input('Filter radius: '))
-            thresh_ratio = float(input('Threshold Ratio: '))
+            #super_ratio = float(input('Super Pixel Ratio: '))
+            #filter_radius = int(input('Filter radius: '))
+            #thresh_ratio = float(input('Threshold Ratio: '))
+            super_ratio = 0.5
+            filter_radius = 41
+            thresh_ratio = 0.5
             for i in tqdm(range(int(len(SRs)/(self.num_row * self.num_col))), desc='Evaluation'):
                 single_SR = SRs[i * self.num_row * self.num_col:(i+1) * self.num_row * self.num_col]
                 recon = self.window_recon(single_SR, super_ratio, filter_radius, thresh_ratio)
