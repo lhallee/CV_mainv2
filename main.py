@@ -74,7 +74,7 @@ def run_from_main():
     # training hyper-parameters
     parser.add_argument('--img_ch', type=int, default=3)
     parser.add_argument('--num_epochs', type=int, default=25)
-    parser.add_argument('--batch_size', type=int, default=64)
+    parser.add_argument('--batch_size', type=int, default=48)
     parser.add_argument('--lr', type=float, default=0.003)
     parser.add_argument('--beta1', type=float, default=0.5)  # momentum1 in Adam
     parser.add_argument('--beta2', type=float, default=0.999)  # momentum2 in Adam
