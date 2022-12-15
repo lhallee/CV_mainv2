@@ -178,20 +178,21 @@ class training_processing:
         crop_imgs = np.transpose(crop_imgs, axes=(0, 3, 1, 2))
         crop_GTs = np.transpose(crop_GTs, axes=(0, 3, 1, 2))
         #split into train and mem
-        X_train, X_mem, y_train, y_mem = train_test_split(crop_imgs, crop_GTs, train_size=self.train_per)
-        #split mem into valid and test
-        X_valid, X_test, y_valid, y_test = train_test_split(X_mem, y_mem, test_size=0.33)
-        train_data = ImageSet(X_train, y_train) #move to pytorch dataset
+        X_train, X_valid, y_train, y_valid = train_test_split(crop_imgs, crop_GTs, train_size=self.train_per)
+        # split mem into valid and test
+        # X_valid, X_test, y_valid, y_test = train_test_split(X_mem, y_mem, test_size=0.33)
+        train_data = ImageSet(X_train, y_train)  # move to pytorch dataset
         valid_data = ImageSet(X_valid, y_valid)
-        test_data = ImageSet(X_test, y_test)
-        #init pytorch dataloader
+        # test_data = ImageSet(X_test, y_test)
+        # init pytorch dataloader
         train_loader = data.DataLoader(train_data, batch_size=self.batch_size,
                                        shuffle=True, drop_last=True, num_workers=self.num_cpu)
         val_loader = data.DataLoader(valid_data, batch_size=self.batch_size,
                                      shuffle=True, drop_last=True, num_workers=self.num_cpu)
-        test_loader = data.DataLoader(test_data, batch_size=self.batch_size,
-                                      shuffle=True, drop_last=True, num_workers=self.num_cpu)
-        return train_loader, val_loader, test_loader
+        # test_loader = data.DataLoader(test_data, batch_size=self.batch_size,
+        # shuffle=True, drop_last=True, num_workers=self.num_cpu)
+        # return train_loader, val_loader, test_loader
+        return train_loader, val_loader
 
 
 class eval_processing:
