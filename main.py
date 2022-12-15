@@ -36,8 +36,8 @@ def main(config):
     elif config.data_type == 'Real':
         train_loader, valid_loader, test_loader = data_setup.to_dataloader()
         print(len(train_loader), len(valid_loader), len(test_loader))
-        vis_imgs, vis_GTs = train_loader.dataset[:50]
-        preview_crops(vis_imgs, vis_GTs, config.num_class)
+        #vis_imgs, vis_GTs = train_loader.dataset[:50]
+        #preview_crops(vis_imgs, vis_GTs, config.num_class)
         solver = Solver(config, train_loader, valid_loader, test_loader)
     elif config.data_type == 'Mock':
         train_loader, valid_loader, test_loader = to_dataloader_mock(dim=config.image_size,
@@ -45,8 +45,8 @@ def main(config):
                                                                      batch_size=config.batch_size
                                                                      )
         print(len(train_loader), len(valid_loader), len(test_loader))
-        vis_imgs, vis_GTs = train_loader.dataset[:10]
-        preview_crops(vis_imgs, vis_GTs, config.num_class)
+        #vis_imgs, vis_GTs = train_loader.dataset[:10]
+        #preview_crops(vis_imgs, vis_GTs, config.num_class)
         solver = Solver(config, train_loader, valid_loader, test_loader)
 
     #Train utilizes random weights to train until stopping criteria of the number of epochs
