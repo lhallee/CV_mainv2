@@ -85,11 +85,11 @@ class Solver(object):
 
     def train(self):
         self.build_model()
-        if self.model_path is not None:
+        if self.model_path != 'None':
             self.unet.load_state_dict(torch.load(self.model_path, map_location=self.device))
         epoch = 0
         #Unet score is the average of our metrics calculated from validation
-        while epoch < self.num_epochs and self.best_unet_score < 0.95:
+        while epoch < self.num_epochs and self.best_unet_score < 0.975:
             epoch_loss = 0
             acc = 0.  # Accuracy
             RE = 0.  # Sensitivity (Recall)

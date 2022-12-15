@@ -3,6 +3,7 @@ import numpy as np
 from tqdm import tqdm
 from natsort import natsorted
 from glob import glob
+from matplotlib import pyplot as plt
 '''
 full_LN_path = './aligned_imgs/'
 save_path = './squared_aligned_ln_imgs/'
@@ -39,11 +40,21 @@ for i in tqdm(range(len(LN_paths))):
 	new_img = cv2.copyMakeBorder(img, top, bottom, left, right, borderType=cv2.BORDER_CONSTANT, value=0)
 	cv2.imwrite(path, new_img)
 '''
+hev_masks = './GT/'
+lob_masks = './lobule masks/'
+hev = natsorted(glob(hev_masks + '*.png'))
+lob = natsorted(glob(lob_masks + '*.png'))
 
-img = cv2.imread('eval_img/section 5_z1c1+2+3.png', 1)
-tmp = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-_,alpha = cv2.threshold(tmp,0,255,cv2.THRESH_BINARY|cv2.THRESH_OTSU)
-b, g, r = cv2.split(img)
-rgba = [b,g,r, alpha]
-dst = cv2.merge(rgba,4)
-cv2.imwrite('test.png', dst)
+hev_test = np.array(cv2.imread(hev[0], 2))
+hev_test = hev_test.reshape(hev_test.shape[0], hev_test.shape[1], 1)
+lob_test = np.array(cv2.imread(lob[0], 2))
+lob_test = lob_test.reshape(lob_test.shape[0], lob_test.shape[1], 1)
+
+both = np.concatenate((hev_test, lob_test), axis=2)
+print(both.shape)
+plt.imshow(both[:,:,0])
+plt.show()
+print('here')
+plt.imshow(both[:,:,1])
+plt.show()
+

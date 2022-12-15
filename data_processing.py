@@ -62,24 +62,15 @@ class ReconSet(data.Dataset):
         return img
 
 
-class Imageset_processing:
+class training_processing:
     def __init__(self, config):
         self.img_path = config.img_path
         self.GT_path = config.GT_path
-        self.eval_path = config.eval_img_path
-        self.eval_type = config.eval_type
         self.dim = config.image_size
         self.num_class = config.num_class
         self.train_per = config.train_per
         self.batch_size = config.batch_size
         self.num_cpu = os.cpu_count()
-
-    def load_imgs(self):
-        img_paths = natsorted(glob(self.img_path + '*.png'))  # natural sort
-        GT_paths = natsorted(glob(self.GT_path + '*.png'))
-        assert len(img_paths) == len(GT_paths), 'Need GT for every Image.'
-        eval_paths = natsorted(glob(self.eval_path + '*.png'))
-        return img_paths, GT_paths, eval_paths
 
     def crop_augment(self, img, GT):
         img = np.array(cv2.imread(img, 1)) / 255.0 #read and scale img
@@ -91,13 +82,8 @@ class Imageset_processing:
         a, b, c, d, e, f = imgs.shape
         imgs = imgs.reshape(a * b, self.dim, self.dim, 3) #reshape windowed output into num_images, dim, dim channel
         GTs = GTs.reshape(a * b, self.dim, self.dim, 1)
-
-        if self.num_class == 2: #format GTs (similar to to_categorical)
-            GTs[GTs < 1] = 0
-            GTs[GTs > 0] = 1
-        if self.num_class == 3:
-            GTs[GTs == 0] = 1
-            GTs = GTs - 1
+        GTs[GTs < 1] = 0
+        GTs[GTs > 0] = 1
         imgs_90 = np.copy(imgs) #copy images for various augmentations
         imgs_vflip = np.copy(imgs)
         imgs_hflip = np.copy(imgs)
@@ -141,10 +127,10 @@ class Imageset_processing:
         final_crops_GT = np.concatenate((GTs, GTs_90, GTs_vflip, GTs_hflip, GTs_jitter_1, GTs_jitter_2, GTs_jitter_3))
         return final_crops, final_crops_GT
 
-    def to_dataloader(self):
-        img_paths, GT_paths = self.load_imgs()[:2]
-        #img_paths = img_paths[:1]
-        #GT_paths = GT_paths[:1]
+    def to_dataloader_single(self):
+        img_paths = natsorted(glob(self.img_path + '*.png'))  # natural sort
+        GT_paths = natsorted(glob(self.GT_path + '*.png'))
+        assert len(img_paths) == len(GT_paths), 'Need GT for every Image.'
         #Combine results from each image path into one array
         crop_imgs = np.concatenate([self.crop_augment(img_paths[i], GT_paths[i])[0]
                                     for i in tqdm(range(len(img_paths)))], axis=0)
@@ -169,6 +155,54 @@ class Imageset_processing:
                                       shuffle=True, drop_last=True, num_workers=self.num_cpu)
         return train_loader, val_loader, test_loader
 
+    def to_dataloader_multi(self):
+        img_paths = natsorted(glob(self.img_path + '*.png'))  # natural sort
+        hev_paths = natsorted(glob(self.GT_path + 'hev*'))
+        lob_paths = natsorted(glob(self.GT_path + 'Lob*'))
+        assert len(img_paths) * self.num_class == len(hev_paths) + len(lob_paths), 'Need GT for every Image.'
+        #img_paths = img_paths[:1]
+        #hev_paths = hev_paths[:1]
+        #lob_paths = lob_paths[:1]
+        #Combine results from each image path into one array
+        crop_imgs = np.concatenate([self.crop_augment(img_paths[i], hev_paths[i])[0]
+                                    for i in tqdm(range(len(img_paths)))], axis=0)
+        crop_hevs = np.concatenate([self.crop_augment(img_paths[i], hev_paths[i])[1]
+                                   for i in tqdm(range(len(img_paths)))], axis=0)
+        crop_lobs = np.concatenate([self.crop_augment(img_paths[i], lob_paths[i])[1]
+                                    for i in tqdm(range(len(img_paths)))], axis=0)
+        #numpy array to torch tensor, move around columns for pytorch convolution
+        crop_GTs = np.concatenate((crop_lobs, crop_hevs), axis=3)
+        crop_imgs = np.transpose(crop_imgs, axes=(0, 3, 1, 2))
+        crop_GTs = np.transpose(crop_GTs, axes=(0, 3, 1, 2))
+        #split into train and mem
+        X_train, X_mem, y_train, y_mem = train_test_split(crop_imgs, crop_GTs, train_size=self.train_per)
+        #split mem into valid and test
+        X_valid, X_test, y_valid, y_test = train_test_split(X_mem, y_mem, test_size=0.33)
+        train_data = ImageSet(X_train, y_train) #move to pytorch dataset
+        valid_data = ImageSet(X_valid, y_valid)
+        test_data = ImageSet(X_test, y_test)
+        #init pytorch dataloader
+        train_loader = data.DataLoader(train_data, batch_size=self.batch_size,
+                                       shuffle=True, drop_last=True, num_workers=self.num_cpu)
+        val_loader = data.DataLoader(valid_data, batch_size=self.batch_size,
+                                     shuffle=True, drop_last=True, num_workers=self.num_cpu)
+        test_loader = data.DataLoader(test_data, batch_size=self.batch_size,
+                                      shuffle=True, drop_last=True, num_workers=self.num_cpu)
+        return train_loader, val_loader, test_loader
+
+
+class eval_processing:
+    def __init__(self, config):
+        self.eval_path = config.eval_img_path
+        self.eval_type = config.eval_type
+        self.dim = config.image_size
+        self.num_class = config.num_class
+        self.batch_size = config.batch_size
+        self.num_cpu = os.cpu_count()
+
+    def load_imgs(self):
+        eval_paths = natsorted(glob(self.eval_path + '*.png'))  # natural sort
+        return eval_paths
     def crop_recon(self, img):
         img = np.array(cv2.imread(img, 1)) / 255.0 #load and scale img
         imgs = view_as_windows(img, (self.dim, self.dim, 3), step=self.dim)
@@ -178,7 +212,7 @@ class Imageset_processing:
         return imgs, a, b
 
     def eval_dataloader(self):
-        eval_paths = self.load_imgs()[2]
+        eval_paths = self.load_imgs()
         if self.eval_type == 'Windowed':
             #path to crop_recon, concatenate results
             window_imgs = np.concatenate([self.crop_recon(eval_paths[i])[0]

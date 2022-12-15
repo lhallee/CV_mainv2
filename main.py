@@ -1,6 +1,6 @@
 import argparse
 import os
-from data_processing import Imageset_processing
+from data_processing import training_processing, eval_processing
 from run_model import Solver
 from plots import preview_crops, preview_crops_eval
 from mock_data import to_dataloader_mock
@@ -9,7 +9,7 @@ from evaluation import eval_solver
 
 
 def main(config):
-    config.output_ch = config.num_class - 1
+    config.output_ch = config.num_class
     cudnn.benchmark = True
     if config.model_type not in ['U_Net', 'R2U_Net', 'AttU_Net', 'R2AttU_Net']:
         print('ERROR!! model_type should be selected in U_Net/R2U_Net/AttU_Net/R2AttU_Net')
@@ -27,17 +27,22 @@ def main(config):
         os.makedirs(config.GT_path)
 
     print(config)
-    data_setup = Imageset_processing(config)
     if config.mode == 'eval':
+        data_setup = eval_processing(config)
         eval_loader, num_col, num_row = data_setup.eval_dataloader()
         solver = eval_solver(config, eval_loader, num_col, num_row)
         solver.eval()
     #Can choose between real data in a path or generated data of squares of various sizes
     elif config.data_type == 'Real':
-        train_loader, valid_loader, test_loader = data_setup.to_dataloader()
+        data_setup = training_processing(config)
+        if config.num_class > 1:
+            train_loader, valid_loader, test_loader = data_setup.to_dataloader_multi()
+        else:
+            train_loader, valid_loader, test_loader = data_setup.to_dataloader_single()
+
         print(len(train_loader), len(valid_loader), len(test_loader))
-        #vis_imgs, vis_GTs = train_loader.dataset[:50]
-        #preview_crops(vis_imgs, vis_GTs, config.num_class)
+        vis_imgs, vis_GTs = train_loader.dataset[:10]
+        preview_crops(vis_imgs, vis_GTs, config.num_class)
         solver = Solver(config, train_loader, valid_loader, test_loader)
     elif config.data_type == 'Mock':
         train_loader, valid_loader, test_loader = to_dataloader_mock(dim=config.image_size,
@@ -62,14 +67,14 @@ def main(config):
 def run_from_main():
     parser = argparse.ArgumentParser()
     # model hyper-parameters
-    parser.add_argument('--image_size', type=int, default=256)
+    parser.add_argument('--image_size', type=int, default=128)
     parser.add_argument('--t', type=int, default=3, help='t for Recurrent step of R2U_Net or R2AttU_Net')
     parser.add_argument('--num_class', type=int, default=2, help='Number of classes for segmentation')
 
     # training hyper-parameters
     parser.add_argument('--img_ch', type=int, default=3)
-    parser.add_argument('--num_epochs', type=int, default=10)
-    parser.add_argument('--batch_size', type=int, default=16)
+    parser.add_argument('--num_epochs', type=int, default=25)
+    parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--lr', type=float, default=0.003)
     parser.add_argument('--beta1', type=float, default=0.5)  # momentum1 in Adam
     parser.add_argument('--beta2', type=float, default=0.999)  # momentum2 in Adam
@@ -80,7 +85,7 @@ def run_from_main():
     parser.add_argument('--mode', type=str, default='eval')
     parser.add_argument('--model_type', type=str, default='R2AttU_Net', help='U_Net/R2U_Net/AttU_Net/R2AttU_Net')
     parser.add_argument('--result_path', type=str, default='./result/')
-    parser.add_argument('--model_path', type=str, default=None)
+    parser.add_argument('--model_path', type=str, default='None')
     parser.add_argument('--img_path', type=str, default='./img/')
     parser.add_argument('--GT_path', type=str, default='./GT/')
     parser.add_argument('--eval_img_path', type=str, default='./eval_img/')
@@ -113,7 +118,7 @@ if __name__ == '__main__':
     parser.add_argument('--mode', type=str, default='train', help='train, test, or eval')
     parser.add_argument('--model_type', type=str, default='R2AttU_Net', help='U_Net/R2U_Net/AttU_Net/R2AttU_Net')
     parser.add_argument('--result_path', type=str, default='./result/')
-    parser.add_argument('--model_path', type=str, default=None)
+    parser.add_argument('--model_path', type=str, default='None')
     parser.add_argument('--img_path', type=str, default='./img/')
     parser.add_argument('--GT_path', type=str, default='./GT/')
     parser.add_argument('--eval_img_path', type=str, default='./eval_img/') #full LN for evaluation

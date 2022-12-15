@@ -14,7 +14,7 @@ def preview_crops(imgs, GTs, num_class=2):
         plt.imshow(imgs[i])
         plt.axis('off')
         plt.title('Img')
-        if num_class == 2:
+        if num_class == 1:
             fig.add_subplot(rows, columns, 2)
             plt.imshow(GTs[i][:,:,0], cmap='gray')
             plt.axis('off')
@@ -52,7 +52,7 @@ def checker(path, feed_img, SR, GT, epoch, batch, num_class=2):
     plt.imshow(SR[i][:,:,0])
     plt.axis('off')
     plt.title('Img')
-    if num_class == 2:
+    if num_class == 1:
         fig.add_subplot(rows, columns, 2)
         plt.imshow(GT[i][:, :, 0], cmap='gray', vmin=0, vmax=1)
         plt.axis('off')
