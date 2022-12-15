@@ -6,6 +6,7 @@ from plots import eval_saver
 from tqdm import tqdm
 from models import U_Net, R2U_Net, AttU_Net, R2AttU_Net
 from matplotlib import pyplot as plt
+from datetime import datetime
 
 
 class eval_solver:
@@ -57,6 +58,7 @@ class eval_solver:
 
     @torch.no_grad()  # don't update weights while evaluating
     def eval(self):
+        now = datetime.now()
         self.build_model()  # rebuild model
         try:
             self.unet.load_state_dict(torch.load(self.model_path, map_location=self.device))  # load pretrained weights
@@ -73,7 +75,7 @@ class eval_solver:
             for i in tqdm(range(int(len(SRs)/(self.num_row * self.num_col))), desc='Evaluation'):
                 single_SR = SRs[i * self.num_row * self.num_col:(i+1) * self.num_row * self.num_col]
                 recon = self.window_recon(single_SR, super_ratio, filter_radius, thresh_ratio)
-                plt.imsave(self.result_path + 'eval' + self.eval_type + str(i) + '_img.png', recon)
+                plt.imsave(self.result_path + 'eval' + now + self.eval_type + str(i) + '_img.png', recon)
         elif self.eval_type == 'Scaled':
             for i in range(len(SRs)):
                 eval_saver(self.result_path, SRs[i][:,:,0], i, self.eval_type)
