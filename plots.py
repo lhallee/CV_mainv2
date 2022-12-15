@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 def preview_crops(imgs, GTs, num_class=2):
     #Displays crops from dataloaders
     rows = 1
-    columns = num_class
+    columns = num_class + 1
     #Back to normal image format
     imgs = np.transpose(np.array(imgs), axes=(0, 2, 3, 1))
     GTs = np.transpose(np.array(GTs), axes=(0, 2, 3, 1))
@@ -42,7 +42,7 @@ def preview_crops_eval(imgs):
 def checker(path, feed_img, SR, GT, epoch, batch, num_class=2):
     #For checking training progress mid training
     rows = 1
-    columns = num_class
+    columns = num_class + 1
     SR = np.transpose(np.array(SR), axes=(0, 2, 3, 1))
     GT = np.transpose(np.array(GT), axes=(0, 2, 3, 1))
     feed_img = np.transpose(np.array(feed_img), axes=(0, 2, 3, 1))
