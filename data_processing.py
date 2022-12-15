@@ -90,13 +90,13 @@ class training_processing:
         #reshape for torch augmentation
         imgs_jitter_1 = torch.tensor(np.transpose(np.copy(imgs), axes=(0, 3, 1, 2)), dtype=torch.float32)
         imgs_jitter_2 = torch.tensor(np.transpose(np.copy(imgs), axes=(0, 3, 1, 2)), dtype=torch.float32)
-        imgs_jitter_3 = torch.tensor(np.transpose(np.copy(imgs), axes=(0, 3, 1, 2)), dtype=torch.float32)
+        #imgs_jitter_3 = torch.tensor(np.transpose(np.copy(imgs), axes=(0, 3, 1, 2)), dtype=torch.float32)
         GTs_90 = np.copy(GTs)
         GTs_vflip = np.copy(GTs)
         GTs_hflip = np.copy(GTs)
         GTs_jitter_1 = np.copy(GTs)
         GTs_jitter_2 = np.copy(GTs)
-        GTs_jitter_3 = np.copy(GTs)
+        #GTs_jitter_3 = np.copy(GTs)
         for i in range(len(imgs)):
             imgs_90[i] = np.rot90(imgs_90[i])
             imgs_vflip[i] = np.flipud(imgs_vflip[i])
@@ -110,21 +110,23 @@ class training_processing:
                                                            np.random.uniform(0.0, 0.5),
                                                            np.random.uniform(0.0, 0.5),
                                                            np.random.uniform(0.0, 0.5))
-            transform_3 = torchvision.transforms.ColorJitter(np.random.uniform(0.0, 0.5),
-                                                           np.random.uniform(0.0, 0.5),
-                                                           np.random.uniform(0.0, 0.5),
-                                                           np.random.uniform(0.0, 0.5))
+            #transform_3 = torchvision.transforms.ColorJitter(np.random.uniform(0.0, 0.5),
+                                                           #np.random.uniform(0.0, 0.5),
+                                                           #np.random.uniform(0.0, 0.5),
+                                                           #np.random.uniform(0.0, 0.5))
             imgs_jitter_1[i] = transform_1(imgs_jitter_1[i])
             imgs_jitter_2[i] = transform_2(imgs_jitter_1[i])
-            imgs_jitter_3[i] = transform_3(imgs_jitter_1[i])
+            #imgs_jitter_3[i] = transform_3(imgs_jitter_1[i])
             GTs_90[i] = np.rot90(GTs_90[i])
             GTs_vflip[i] = np.flipud(GTs_vflip[i])
             GTs_hflip[i] = np.fliplr(GTs_hflip[i])
         imgs_jitter_1 = np.transpose(np.array(imgs_jitter_1), axes=(0, 2, 3, 1)) #reshape back to normal
         imgs_jitter_2 = np.transpose(np.array(imgs_jitter_2), axes=(0, 2, 3, 1))  # reshape back to normal
-        imgs_jitter_3 = np.transpose(np.array(imgs_jitter_3), axes=(0, 2, 3, 1))  # reshape back to normal
-        final_crops = np.concatenate((imgs, imgs_90, imgs_vflip, imgs_hflip, imgs_jitter_1, imgs_jitter_2, imgs_jitter_3)) #combine all together
-        final_crops_GT = np.concatenate((GTs, GTs_90, GTs_vflip, GTs_hflip, GTs_jitter_1, GTs_jitter_2, GTs_jitter_3))
+        #imgs_jitter_3 = np.transpose(np.array(imgs_jitter_3), axes=(0, 2, 3, 1))  # reshape back to normal
+        #final_crops = np.concatenate((imgs, imgs_90, imgs_vflip, imgs_hflip, imgs_jitter_1, imgs_jitter_2, imgs_jitter_3)) #combine all together
+        final_crops = np.concatenate((imgs, imgs_90, imgs_vflip, imgs_hflip, imgs_jitter_1, imgs_jitter_2))
+        #final_crops_GT = np.concatenate((GTs, GTs_90, GTs_vflip, GTs_hflip, GTs_jitter_1, GTs_jitter_2, GTs_jitter_3))
+        final_crops_GT = np.concatenate((GTs, GTs_90, GTs_vflip, GTs_hflip, GTs_jitter_1, GTs_jitter_2))
         return final_crops, final_crops_GT
 
     def to_dataloader_single(self):
@@ -140,20 +142,21 @@ class training_processing:
         crop_imgs = np.transpose(crop_imgs, axes=(0, 3, 1, 2))
         crop_GTs = np.transpose(crop_GTs, axes=(0, 3, 1, 2))
         #split into train and mem
-        X_train, X_mem, y_train, y_mem = train_test_split(crop_imgs, crop_GTs, train_size=self.train_per)
+        X_train, X_valid, y_train, y_valid = train_test_split(crop_imgs, crop_GTs, train_size=self.train_per)
         #split mem into valid and test
-        X_valid, X_test, y_valid, y_test = train_test_split(X_mem, y_mem, test_size=0.33)
+        #X_valid, X_test, y_valid, y_test = train_test_split(X_mem, y_mem, test_size=0.33)
         train_data = ImageSet(X_train, y_train) #move to pytorch dataset
         valid_data = ImageSet(X_valid, y_valid)
-        test_data = ImageSet(X_test, y_test)
+        #test_data = ImageSet(X_test, y_test)
         #init pytorch dataloader
         train_loader = data.DataLoader(train_data, batch_size=self.batch_size,
                                        shuffle=True, drop_last=True, num_workers=self.num_cpu)
         val_loader = data.DataLoader(valid_data, batch_size=self.batch_size,
                                      shuffle=True, drop_last=True, num_workers=self.num_cpu)
-        test_loader = data.DataLoader(test_data, batch_size=self.batch_size,
-                                      shuffle=True, drop_last=True, num_workers=self.num_cpu)
-        return train_loader, val_loader, test_loader
+        #test_loader = data.DataLoader(test_data, batch_size=self.batch_size,
+                                      #shuffle=True, drop_last=True, num_workers=self.num_cpu)
+        #return train_loader, val_loader, test_loader
+        return train_loader, val_loader
 
     def to_dataloader_multi(self):
         img_paths = natsorted(glob(self.img_path + '*.png'))  # natural sort

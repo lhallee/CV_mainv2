@@ -10,11 +10,10 @@ import csv
 
 
 class Solver(object):
-    def __init__(self, config, train_loader, valid_loader, test_loader):
+    def __init__(self, config, train_loader, valid_loader):
         #Dataloaders
         self.train_loader = train_loader
         self.valid_loader = valid_loader
-        self.test_loader = test_loader
         #Model
         self.model_type = config.model_type
         self.t = config.t

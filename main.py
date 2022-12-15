@@ -36,14 +36,13 @@ def main(config):
     elif config.data_type == 'Real':
         data_setup = training_processing(config)
         if config.num_class > 1:
-            train_loader, valid_loader, test_loader = data_setup.to_dataloader_multi()
+            train_loader, valid_loader = data_setup.to_dataloader_multi()
         else:
-            train_loader, valid_loader, test_loader = data_setup.to_dataloader_single()
-
-        print(len(train_loader), len(valid_loader), len(test_loader))
+            train_loader, valid_loader = data_setup.to_dataloader_single()
+        print(len(train_loader), len(valid_loader))
         vis_imgs, vis_GTs = train_loader.dataset[:10]
         preview_crops(vis_imgs, vis_GTs, config.num_class)
-        solver = Solver(config, train_loader, valid_loader, test_loader)
+        solver = Solver(config, train_loader, valid_loader)
     elif config.data_type == 'Mock':
         train_loader, valid_loader, test_loader = to_dataloader_mock(dim=config.image_size,
                                                                      train_per=config.train_per,
@@ -58,7 +57,7 @@ def main(config):
     #then calls the test function
     if config.mode == 'train':
         solver.train()
-        solver.test()
+        #solver.test()
     #Uses pretrained weights from model_path
     elif config.mode == 'test':
         solver.test()
