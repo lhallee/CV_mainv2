@@ -51,7 +51,8 @@ class eval_solver:
                 recon_hev[i * self.dim:(i + 1) * self.dim, j * self.dim:(j + 1) * self.dim] = SR[k][:,:,1]
                 k += 1
 
-
+        #recon_lob = filters.threshold_local(recon_lob, 101)
+        #recon_hev = filters.threshold_local(recon_hev, 41)
         '''
         W, H = recon.shape
         x_col, y_col = np.array(range(W)), np.array(range(H))
