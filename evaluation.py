@@ -16,6 +16,7 @@ class eval_solver:
     def __init__(self, config, eval_loader, num_col=0, num_row=0):
         self.eval_loader = eval_loader
         self.eval_type = config.eval_type
+        self.eval_path = config.eval_type
         self.num_col = num_col
         self.num_row = num_row
         self.model_type = config.model_type
@@ -51,8 +52,9 @@ class eval_solver:
                 recon_hev[i * self.dim:(i + 1) * self.dim, j * self.dim:(j + 1) * self.dim] = SR[k][:,:,1]
                 k += 1
 
-        #recon_lob = filters.threshold_local(recon_lob, 101)
-        #recon_hev = filters.threshold_local(recon_hev, 41)
+
+        recon_lob = filters.threshold_local(recon_lob, 101)
+        recon_hev = filters.threshold_local(recon_hev, 41)
         '''
         W, H = recon.shape
         x_col, y_col = np.array(range(W)), np.array(range(H))
