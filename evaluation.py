@@ -86,18 +86,21 @@ class eval_solver:
             #filter_radius = 41
             #thresh_ratio = 0.5
             for i in tqdm(range(int(len(SRs)/(self.num_row * self.num_col))), desc='Evaluation'):
-                #super_ratio = float(input('Super Pixel Ratio: '))
-                #filter_radius = int(input('Filter radius: '))
-                #thresh_ratio = float(input('Threshold Ratio: '))
-                single_SR = SRs[i * self.num_row * self.num_col:(i+1) * self.num_row * self.num_col]
-                recon_lob, recon_hev = self.window_recon(single_SR)
-                input_img = np.array(cv2.resize(cv2.imread(eval_paths[i], 1),
-                                                (recon_lob.shape[0], recon_lob.shape[1]),
-                                                interpolation=cv2.INTER_NEAREST))
-                recon_lob = recon_lob.reshape(recon_lob.shape[0], recon_lob.shape[1])
-                recon_hev = recon_hev.reshape(recon_hev.shape[0], recon_hev.shape[1])
-                recon = np.hstack((input_img, recon_hev, recon_lob))
-                plt.imsave(self.result_path + 'eval' + now + self.eval_type + str(i) + '_img.png', recon)
+                try:
+                    #super_ratio = float(input('Super Pixel Ratio: '))
+                    #filter_radius = int(input('Filter radius: '))
+                    #thresh_ratio = float(input('Threshold Ratio: '))
+                    single_SR = SRs[i * self.num_row * self.num_col:(i+1) * self.num_row * self.num_col]
+                    recon_lob, recon_hev = self.window_recon(single_SR)
+                    input_img = np.array(cv2.resize(cv2.imread(eval_paths[i], 1),
+                                                    (recon_lob.shape[0], recon_lob.shape[1]),
+                                                    interpolation=cv2.INTER_NEAREST))
+                    recon_lob = recon_lob.reshape(recon_lob.shape[0], recon_lob.shape[1])
+                    recon_hev = recon_hev.reshape(recon_hev.shape[0], recon_hev.shape[1])
+                    recon = np.hstack((input_img, recon_hev, recon_lob))
+                    plt.imsave(self.result_path + 'eval' + now + self.eval_type + str(i) + '_img.png', recon)
+                except:
+                    continue
         elif self.eval_type == 'Scaled':
             for i in range(len(SRs)):
                 eval_saver(self.result_path, SRs[i][:,:,0], i, self.eval_type)
