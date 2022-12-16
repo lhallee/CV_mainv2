@@ -2,6 +2,9 @@ import numpy as np
 import torch
 import scipy.interpolate
 from skimage import filters
+import cv2
+from glob import glob
+from natsort import natsorted
 from plots import eval_saver
 from tqdm import tqdm
 from models import U_Net, R2U_Net, AttU_Net, R2AttU_Net
@@ -38,15 +41,19 @@ class eval_solver:
             self.unet = R2AttU_Net(img_ch=self.img_ch, output_ch=self.output_ch, t=self.t)
         self.unet.to(self.device)
 
-    def window_recon(self, SR, super_ratio, filter_radius, thresh_ratio):
-        recon = np.zeros((self.num_col * self.dim, self.num_row * self.dim))
+    def window_recon(self, SR):
+        recon_hev = np.zeros((self.num_col * self.dim, self.num_row * self.dim))
+        recon_lob = np.zeros((self.num_col * self.dim, self.num_row * self.dim))
         k = 0
         for i in range(self.num_col):
             for j in range(self.num_row):
-                recon[i * self.dim:(i + 1) * self.dim, j * self.dim:(j + 1) * self.dim] = SR[k][:,:,0]
+                recon_lob[i * self.dim:(i + 1) * self.dim, j * self.dim:(j + 1) * self.dim] = SR[k][:,:,0]
+                recon_hev[i * self.dim:(i + 1) * self.dim, j * self.dim:(j + 1) * self.dim] = SR[k][:,:,1]
                 k += 1
+
+
+        '''
         W, H = recon.shape
-        
         x_col, y_col = np.array(range(W)), np.array(range(H))
         x_high, y_high, = np.arange(0, W, super_ratio), np.arange(0, H, super_ratio)
         filt_img = filters.threshold_local(recon, filter_radius)
@@ -55,10 +62,13 @@ class eval_solver:
         filt_set_func = scipy.interpolate.RectBivariateSpline(x_col, y_col, filt_img)
         filt_func_img = filt_set_func(x_high, y_high)
         return filt_func_img
+        '''
+        return recon_lob, recon_hev
 
     @torch.no_grad()  # don't update weights while evaluating
     def eval(self):
         now = str(datetime.now())
+        eval_paths = natsorted(glob(self.eval_path + '*.png'))
         self.build_model()  # rebuild model
         try:
             self.unet.load_state_dict(torch.load(self.model_path, map_location=self.device))  # load pretrained weights
@@ -73,11 +83,17 @@ class eval_solver:
             #filter_radius = 41
             #thresh_ratio = 0.5
             for i in tqdm(range(int(len(SRs)/(self.num_row * self.num_col))), desc='Evaluation'):
-                super_ratio = float(input('Super Pixel Ratio: '))
-                filter_radius = int(input('Filter radius: '))
-                thresh_ratio = float(input('Threshold Ratio: '))
+                #super_ratio = float(input('Super Pixel Ratio: '))
+                #filter_radius = int(input('Filter radius: '))
+                #thresh_ratio = float(input('Threshold Ratio: '))
                 single_SR = SRs[i * self.num_row * self.num_col:(i+1) * self.num_row * self.num_col]
-                recon = self.window_recon(single_SR, super_ratio, filter_radius, thresh_ratio)
+                recon_lob, recon_hev = self.window_recon(single_SR)
+                input_img = np.array(cv2.resize(cv2.imread(eval_paths[i], 1),
+                                                (recon_lob.shape[0], recon_lob.shape[1]),
+                                                interpolation=cv2.INTER_NEAREST))
+                recon_lob = recon_lob.reshape(recon_lob.shape[0], recon_lob.shape[1])
+                recon_hev = recon_hev.reshape(recon_hev.shape[0], recon_hev.shape[1])
+                recon = np.hstack((input_img, recon_hev, recon_lob))
                 plt.imsave(self.result_path + 'eval' + now + self.eval_type + str(i) + '_img.png', recon)
         elif self.eval_type == 'Scaled':
             for i in range(len(SRs)):
