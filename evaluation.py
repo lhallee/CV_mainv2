@@ -71,7 +71,7 @@ class eval_solver:
     @torch.no_grad()  # don't update weights while evaluating
     def eval(self):
         now = str(datetime.now())
-        eval_paths = natsorted(glob(self.eval_path + '*.png'))
+        #eval_paths = natsorted(glob(self.eval_path + '*.png'))
         self.build_model()  # rebuild model
         try:
             self.unet.load_state_dict(torch.load(self.model_path, map_location=self.device))  # load pretrained weights
@@ -92,12 +92,12 @@ class eval_solver:
                     #thresh_ratio = float(input('Threshold Ratio: '))
                     single_SR = SRs[i * self.num_row * self.num_col:(i+1) * self.num_row * self.num_col]
                     recon_lob, recon_hev = self.window_recon(single_SR)
-                    input_img = np.array(cv2.resize(cv2.imread(eval_paths[i], 1),
-                                                    (recon_lob.shape[0], recon_lob.shape[1]),
-                                                    interpolation=cv2.INTER_NEAREST))
+                    #input_img = np.array(cv2.resize(cv2.imread(eval_paths[i], 1),
+                                                    #(recon_lob.shape[0], recon_lob.shape[1]),
+                                                    #interpolation=cv2.INTER_NEAREST))
                     recon_lob = recon_lob.reshape(recon_lob.shape[0], recon_lob.shape[1])
                     recon_hev = recon_hev.reshape(recon_hev.shape[0], recon_hev.shape[1])
-                    recon = np.hstack((input_img, recon_hev, recon_lob))
+                    recon = np.hstack((recon_hev, recon_lob))
                     plt.imsave(self.result_path + 'eval' + now + self.eval_type + str(i) + '_img.png', recon)
                 except:
                     continue
